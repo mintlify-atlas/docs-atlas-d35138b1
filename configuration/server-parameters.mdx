@@ -1,0 +1,68 @@
+---
+title: "Server parameters"
+description: "Command-line options for configuring the RedEye server at startup"
+---
+
+RedEye accepts command-line flags at startup that control its mode of operation, authentication, networking, and parser behavior. Flags passed on the command line take precedence over any values set in a [`config.json`](/configuration/config-file) file.
+
+To view all available options, run:
+
+```bash
+./RedEye -h
+```
+
+## Parameters
+
+| Flag | Type | Default | Description |
+|------|------|---------|-------------|
+| `-d, --developmentMode` | boolean | `false` | Put the database and server in development mode. Sets `production` to `false` and `databaseMode` to `DEV_PERSIST`. |
+| `-r, --redTeam` | boolean | `false` | Run the server in Red Team mode, enabling log upload, data editing, and presentation creation. Requires `--password`. |
+| `--port` | number | `4000` | The port the server listens on. |
+| `-p, --password` | string | — | The password for user authentication. Required when running in Red Team mode. |
+| `--parsers` | string... | — | One or more parser binary names to enable, or pass the flag alone to load all parsers found in the `parsers/` folder. |
+| `-t, --childProcesses` | number | `8` | Maximum number of child processes the parser can use. |
+| `-h, --help` | — | — | Display help for the command. |
+
+<Note>
+  A password is required to start in Red Team mode. The server will refuse to start if `--redTeam` is set without a corresponding `--password` value.
+</Note>
+
+## Examples
+
+<CodeGroup>
+
+```bash Red Team mode
+./RedEye --redTeam --password mypassword
+```
+
+```bash Custom port
+./RedEye --redTeam --password mypassword --port 8080
+```
+
+```bash Specific parsers
+./RedEye --redTeam --password mypassword --parsers cobalt-strike-parser brute-ratel-parser
+```
+
+```bash All parsers in parsers/ folder
+./RedEye --redTeam --password mypassword --parsers
+```
+
+```bash Development mode
+./RedEye --developmentMode
+```
+
+</CodeGroup>
+
+### Blue Team mode (default)
+
+Blue Team mode is the default. You can start the server without any flags:
+
+```bash
+./RedEye
+```
+
+RedEye will serve the read-only UI at `http://127.0.0.1:4000` and open your default browser automatically.
+
+<Tip>
+  You can also configure all of these options using a `config.json` file placed in the same directory as the `RedEye` binary. See [Config file](/configuration/config-file) for details.
+</Tip>

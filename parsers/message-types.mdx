@@ -1,0 +1,247 @@
+---
+title: 'Message types'
+description: 'The message types parsers use to communicate with RedEye via stdout'
+---
+
+Parsers communicate with RedEye by writing messages to stdout. Every message follows the same format:
+
+```
+[<TYPE>] <JSON>\n
+```
+
+Each message has a type prefix in square brackets, followed by a space, a JSON-encoded payload, and a newline character. RedEye reads one message per line.
+
+## Message types
+
+| Type | Purpose |
+|---|---|
+| `[DATA]` | Return the result of a command (required for `info` and `parse-campaign`) |
+| `[PROGRESS]` | Report parsing progress to the RedEye UI |
+| `[LOG]` | Append a message to the parsing log file |
+| `[ERROR]` | Signal an unrecoverable error that ends the parsing process |
+| `[DEBUG]` | Emit debug messages during development |
+
+The `ParserMessageTypes` enum from `@redeye/parser-core` defines all type values:
+
+```typescript
+enum ParserMessageTypes {
+	Data = '[DATA]',
+	Progress = '[PROGRESS]',
+	Log = '[LOG]',
+	Error = '[ERROR]',
+	Debug = '[DEBUG]',
+}
+```
+
+---
+
+## [DATA]
+
+Returns the result of a command. Use `[DATA]` to respond to both the `info` and `parse-campaign` commands.
+
+```
+[DATA] <JSON>\n
+```
+
+The JSON payload must match the expected type for the command:
+
+- For `info`: a `ParserInfo` object
+- For `parse-campaign`: a `ParserOutput` object
+
+**Example — returning parse results:**
+
+```typescript
+const output = {
+	servers: { server1: { name: 'server1', type: 'https' } },
+	hosts: {},
+	beacons: {},
+	operators: {},
+	commands: {},
+	links: {},
+};
+process.stdout.write('[DATA] ' + JSON.stringify(output) + '\n');
+```
+
+**Example — returning parser info:**
+
+```typescript
+const info = {
+	version: 1,
+	id: 'custom-redeye-parser',
+	name: 'Custom RedEye Parser',
+	uploadForm: { /* ... */ },
+};
+process.stdout.write('[DATA] ' + JSON.stringify(info) + '\n');
+```
+
+---
+
+## [PROGRESS]
+
+Reports the current progress of a long-running `parse-campaign` execution. RedEye displays this in the upload progress indicator.
+
+```
+[PROGRESS] <JSON>\n
+```
+
+The JSON payload must match the `ParserProgress` interface:
+
+```typescript
+interface ParserProgress {
+	percent: number; // 0–100
+	message: string; // Human-readable status description
+}
+```
+
+**Example:**
+
+```typescript
+process.stdout.write(
+	'[PROGRESS] ' +
+		JSON.stringify({
+			percent: 50,
+			message: 'Processing logs for beacon "beacon1" on host "DESKTOP-123"',
+		}) +
+		'\n'
+);
+```
+
+Emit `[PROGRESS]` messages throughout your parsing loop to give users a real-time view of progress:
+
+```typescript
+for (let i = 0; i < files.length; i++) {
+	const file = files[i];
+	// ... parse file ...
+	process.stdout.write(
+		'[PROGRESS] ' +
+			JSON.stringify({
+				percent: Math.round(((i + 1) / files.length) * 100),
+				message: `Parsing file ${i + 1} of ${files.length}: ${file}`,
+			}) +
+			'\n'
+	);
+}
+```
+
+---
+
+## [LOG]
+
+Appends a message to the parsing log file (`parsing.log`) in the campaign folder. Use `[LOG]` for informational messages that help diagnose issues after parsing completes.
+
+```
+[LOG] <JSON>\n
+```
+
+The JSON payload must match the `LoggerOptions` interface:
+
+```typescript
+interface LoggerOptions {
+	message: string;
+	level?: 'error' | 'warn' | 'debug'; // default: 'debug'
+	tags?: string[];
+	error?: unknown;
+	payload?: unknown;
+}
+```
+
+**Example:**
+
+```typescript
+process.stdout.write(
+	'[LOG] ' +
+		JSON.stringify({
+			message: 'Parsing file 1 of 3',
+			level: 'debug',
+		}) +
+		'\n'
+);
+```
+
+Log levels:
+
+| Level | When to use |
+|---|---|
+| `"debug"` | Verbose information during normal operation |
+| `"warn"` | Recoverable issues or unexpected conditions |
+| `"error"` | Errors that were handled but worth noting |
+
+---
+
+## [ERROR]
+
+Signals an unrecoverable error that ends the parsing process. RedEye displays the error message to the user.
+
+```
+[ERROR] <JSON>\n
+```
+
+Send a JSON object with a `message` field:
+
+**Example:**
+
+```typescript
+process.stdout.write(
+	'[ERROR] ' +
+		JSON.stringify({
+			message: "Could not find required file 'beacon-123.log' in the uploaded folder",
+		}) +
+		'\n'
+);
+process.exit(1);
+```
+
+<Warning>
+After writing an `[ERROR]` message, exit your parser with a non-zero exit code. RedEye treats any `[ERROR]` message as a terminal failure and cancels the import.
+</Warning>
+
+---
+
+## [DEBUG]
+
+Emits debug messages that are only visible during development. Use `[DEBUG]` to inspect intermediate values while building your parser without polluting the production log.
+
+```
+[DEBUG] <JSON>\n
+```
+
+**Example:**
+
+```typescript
+process.stdout.write(
+	'[DEBUG] ' +
+		JSON.stringify({
+			line: currentLine,
+			parsed: parsedObject,
+		}) +
+		'\n'
+);
+```
+
+<Tip>
+Strip `[DEBUG]` messages from your parser before distributing it. They are intended for development only and add unnecessary output overhead.
+</Tip>
+
+---
+
+## Using parser-core (TypeScript/Node.js)
+
+If you write your parser in TypeScript or JavaScript, you can use the `@redeye/parser-core` package for typed message writing:
+
+```typescript
+import { ParserMessageTypes, writeParserMessage } from '@redeye/parser-core';
+
+// Write a DATA message
+writeParserMessage(ParserMessageTypes.Data, output);
+
+// Write a PROGRESS message
+writeParserMessage(ParserMessageTypes.Progress, { percent: 75, message: 'Almost done...' });
+
+// Write a LOG message
+writeParserMessage(ParserMessageTypes.Log, { message: 'Parsing complete', level: 'debug' });
+
+// Write an ERROR message
+writeParserMessage(ParserMessageTypes.Error, { message: 'Failed to open log file' });
+```
+
+The `writeParserMessage` function handles JSON serialization and the newline terminator for you.

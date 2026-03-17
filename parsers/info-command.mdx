@@ -1,0 +1,208 @@
+---
+title: 'The info command'
+description: 'Implement the info command to register your parser with RedEye'
+---
+
+The `info` command tells RedEye about your parser and configures the upload form that users see in the "Add Campaign" dialog. RedEye calls this command once for each parser binary it detects on startup.
+
+## When it's called
+
+On startup, RedEye runs:
+
+```bash
+<parser-name> info
+```
+
+Your parser must write a `[DATA]` message to stdout containing a JSON object that matches the `ParserInfo` interface.
+
+## Implementation
+
+Here is a complete `info` implementation with comments explaining each property:
+
+```typescript custom-redeye-parser
+#!/usr/bin/env node
+function info() {
+	const message =
+		'[DATA] ' + // The start of our message with the DATA message type
+		JSON.stringify({
+			version: 1, // The version of the RedEye parser config that the parser is compatible with
+			id: 'custom-redeye-parser', // ID for parser, should match the name of the binary file or command
+			name: 'Custom RedEye Parser', // The display name of the parser
+
+			// Configures the upload form in the RedEye client for the parser
+			uploadForm: {
+				serverDelineation: 'Database', // How our C2 data is separated, by folders of files or database/config file
+				enabledInBlueTeam: false, // Whether the parser is enabled for Blue Team users
+				tabTitle: 'C2 Framework', // The title of the upload option in the selection menu
+				fileUpload: {
+					type: 'Directory', // The type of upload, is it a single file or a directory
+					validate: 'None', // How to validate the files uploaded, more on this later
+					description: 'Upload a directory of C2 log files', // A description of the upload
+				},
+				fileDisplay: {
+					editable: true, // Whether the user can edit the server names before uploading
+				},
+			},
+		}) +
+		'\n'; // End the message with a newline
+	process.stdout.write(message);
+}
+
+if (process.argv[2] === 'info') {
+	info();
+}
+```
+
+## Properties
+
+### Top-level fields
+
+<ParamField path="version" type="number" required>
+  The version of the RedEye parser schema your parser targets. Use `1` for the current schema.
+</ParamField>
+
+<ParamField path="id" type="string" required>
+  A unique identifier for the parser. This **must match the name of the binary file** or command used to invoke the parser.
+
+  ```typescript
+  // Binary is named 'cobalt-strike-parser'
+  id: 'cobalt-strike-parser'
+  ```
+</ParamField>
+
+<ParamField path="name" type="string" required>
+  The human-readable display name shown in the RedEye upload dialog.
+
+  ```typescript
+  name: 'Cobalt Strike Parser'
+  ```
+</ParamField>
+
+<ParamField path="description" type="string">
+  An optional description of the parser, shown in the upload dialog.
+
+  ```typescript
+  description: 'Parses Cobalt Strike beacon logs from a Campaign Folder'
+  ```
+</ParamField>
+
+<ParamField path="uploadForm" type="object" required>
+  Configures the upload form in the RedEye client. See the sections below for its properties.
+</ParamField>
+
+### uploadForm
+
+<ParamField path="uploadForm.tabTitle" type="string" required>
+  The label on the tab in the source selection menu of the "Add Campaign" dialog.
+
+  ```typescript
+  tabTitle: 'Cobalt Strike'
+  ```
+</ParamField>
+
+<ParamField path="uploadForm.serverDelineation" type="string" required>
+  How your C2 data separates server information. Two values are accepted:
+
+  | Value | When to use |
+  |---|---|
+  | `"Folder"` | Server data is separated into distinct subdirectories (`Campaign/Server1/YYMMDD/`) |
+  | `"Database"` | Server data is not in any particular folder structure (a single DB or config file) |
+</ParamField>
+
+<ParamField path="uploadForm.enabledInBlueTeam" type="boolean" required>
+  Whether this parser is available when RedEye is running in Blue Team mode. Blue Team mode is read-only, so set this to `false` unless your parser is specifically designed for blue team analysis.
+</ParamField>
+
+### uploadForm.fileUpload
+
+<ParamField path="uploadForm.fileUpload.type" type="string" required>
+  The type of upload the parser expects.
+
+  | Value | When to use |
+  |---|---|
+  | `"Directory"` | User uploads an entire folder of files |
+  | `"File"` | User uploads a single file or selects multiple individual files |
+</ParamField>
+
+<ParamField path="uploadForm.fileUpload.description" type="string" required>
+  Instructions shown to the user in the upload form describing what to upload.
+
+  ```typescript
+  description: 'Upload a directory of files organized by server name and date in the format: Campaign_Folder/Server_Name/YYYYMMDD/'
+  ```
+</ParamField>
+
+<ParamField path="uploadForm.fileUpload.validate" type="string" required>
+  How RedEye validates the uploaded files before passing them to `parse-campaign`.
+
+  | Value | Behavior |
+  |---|---|
+  | `"None"` | No validation. Any folder or file upload is accepted. |
+  | `"FileExtensions"` | Client-side validation by file extension. Requires `acceptedExtensions: string[]`. |
+  | `"Parser"` | Server-side validation. RedEye invokes your parser's `validate-files` command to verify the uploaded content. |
+
+  ```typescript
+  // No validation
+  validate: 'None'
+
+  // Validate by file extension
+  validate: 'FileExtensions'
+  acceptedExtensions: ['log', 'txt']
+
+  // Delegate validation to the parser binary
+  validate: 'Parser'
+  ```
+</ParamField>
+
+<ParamField path="uploadForm.fileUpload.example" type="string">
+  An optional example string displayed in the upload form showing the expected folder structure or file format.
+
+  ```typescript
+  example: `Campaign_Folder
+  - Server_Folder_1
+    - 200101
+    - 200102
+  - Server_Folder_2
+    - 200105`
+  ```
+</ParamField>
+
+### uploadForm.fileDisplay
+
+<ParamField path="uploadForm.fileDisplay.editable" type="boolean" required>
+  Whether the user can rename the servers inferred from the uploaded files before the campaign is created. Set to `true` to allow renaming.
+</ParamField>
+
+## Cobalt Strike example
+
+The built-in Cobalt Strike parser uses folder-based server delineation and delegates validation to its own `validate-files` command:
+
+```typescript cobalt-strike-parser info.command.ts
+const aboutInfo: ParserInfo = {
+	version: 1,
+	id: 'cobalt-strike-parser',
+	name: 'Cobalt Strike Parser',
+	uploadForm: {
+		serverDelineation: ServerDelineationTypes.Folder,
+		enabledInBlueTeam: false,
+		tabTitle: 'Cobalt Strike',
+		fileUpload: {
+			type: UploadType.Directory,
+			validate: ValidationMode.Parser,
+			description:
+				'Select a single Campaign Folder that contains CobaltStrike Server Folders.\n' +
+				'Each Server Folder should contain beacon logs in dated (YYMMDD) folders.',
+			example: `Campaign_Folder
+- Server_Folder_1
+  - 200101
+  - 200102
+  - 200103
+- Server_Folder_2
+  - 200105`,
+		},
+		fileDisplay: {
+			editable: true,
+		},
+	},
+};
+```

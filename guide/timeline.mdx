@@ -1,0 +1,68 @@
+---
+title: "Timeline"
+description: "Replay campaign events in chronological order using the interactive timeline"
+---
+
+The timeline is located above the graph. It gives you a chronological view of all activity in the campaign and lets you filter the graph to a specific time window or replay events as they occurred.
+
+## What the timeline shows
+
+The timeline displays all beacon commands as events plotted against time. As you interact with the timeline, the graph updates to reflect only the activity within the selected window — nodes and edges that have no activity in the selected range are hidden.
+
+## Timeline controls
+
+The timeline provides four main capabilities:
+
+<CardGroup cols={2}>
+  <Card title="Time range filter" icon="sliders">
+    Drag the handles on the timeline to select a specific start and end time. The graph shows only the beacons and commands active within that range.
+  </Card>
+  <Card title="Playback" icon="play">
+    Step through campaign events as they actually occurred, watching the graph build up in real time.
+  </Card>
+  <Card title="Fast forward and reverse" icon="forward">
+    Speed up or reverse playback to quickly scan forward or backward through the campaign timeline.
+  </Card>
+  <Card title="Scrubber" icon="grip-lines-vertical">
+    Drag the scrubber to jump to any point in the campaign and filter the graph to that moment.
+  </Card>
+</CardGroup>
+
+## Filtering by time range
+
+<Steps>
+  <Step title="Locate the timeline">
+    Find the timeline bar above the graph area.
+  </Step>
+  <Step title="Drag the range handles">
+    Drag the left handle to set the start of the time window and the right handle to set the end. The graph updates in real time as you adjust the range.
+  </Step>
+  <Step title="Review filtered activity">
+    The graph now shows only the hosts, beacons, and connections that were active during the selected window.
+  </Step>
+</Steps>
+
+## Playing back events
+
+<Steps>
+  <Step title="Set a start position">
+    Drag the scrubber to the point in time where you want playback to begin.
+  </Step>
+  <Step title="Start playback">
+    Click the play button on the timeline. RedEye advances through the campaign events in chronological order, animating the graph as each command occurs.
+  </Step>
+  <Step title="Adjust playback speed">
+    Use the fast forward and reverse controls to change the playback speed. Fast forward moves through events more quickly; reverse plays the sequence backward.
+  </Step>
+  <Step title="Stop or scrub">
+    Click the pause button to stop playback at any point, or drag the scrubber to jump directly to a specific moment.
+  </Step>
+</Steps>
+
+<Tip>
+  Timeline playback is particularly useful during presentations. Walk your audience through an attack sequence step by step, pausing to explain each stage as it appears in the graph.
+</Tip>
+
+## Using the scrubber
+
+The scrubber is the draggable indicator on the timeline. Drag it left or right to jump to any moment in the campaign. The graph immediately filters to show only the activity up to that point in time, giving you a snapshot of the network state at that instant.

@@ -1,0 +1,138 @@
+---
+title: "Local build"
+description: "Set up a local development environment and build RedEye from source"
+---
+
+## Prerequisites
+
+Before you begin, make sure you have the following installed:
+
+- [Node.js](https://nodejs.org/en/) >= v16 (the project pins `18.16.1` in `package.json`)
+- [Yarn](https://yarnpkg.com/) — install it globally via npm:
+
+```bash
+npm install -g yarn
+```
+
+## Setup
+
+<Steps>
+  <Step title="Clone the repository">
+    ```bash
+    git clone https://github.com/cisagov/RedEye.git
+    cd RedEye
+    ```
+  </Step>
+
+  <Step title="Install dependencies">
+    Install all workspace packages across `applications/`, `packages/`, and `parsers/`:
+
+    ```bash
+    yarn install
+    ```
+
+    This also runs the `postinstall` script, which initializes Husky git hooks.
+  </Step>
+
+  <Step title="Start the development server">
+    The quickest way to get running is the combined dev mode, which starts both the client and server together:
+
+    ```bash
+    yarn start
+    ```
+
+    Open [http://127.0.0.1:4000](http://127.0.0.1:4000) in your browser. The client runs on a Vite dev server and proxies API requests to the Node.js backend.
+  </Step>
+</Steps>
+
+## Running client and server separately
+
+For active development it is often more useful to run each application in its own terminal so you can see their output independently:
+
+```bash
+# Terminal 1 — React frontend (Vite)
+yarn start:client
+```
+
+```bash
+# Terminal 2 — Node.js backend (TypeScript, nodemon)
+yarn start:server
+```
+
+Under the hood both commands use the [Moon](https://moonrepo.dev/) build system:
+
+- `yarn start:client` runs `moon run @redeye/client:start-dev`
+- `yarn start:server` runs `moon run @redeye/server:start-dev`
+
+## Blue Team development mode
+
+To start both applications in Blue Team mode (read-only, no authentication required):
+
+```bash
+yarn start:blue
+```
+
+This sets `SERVER_BLUE_TEAM=true` before launching the combined dev server.
+
+## Building release binaries
+
+RedEye ships as a self-contained binary built with [pkg](https://github.com/vercel/pkg). The server binary bundles the compiled client assets and SQLite.
+
+<CodeGroup>
+
+```bash All platforms
+yarn release:all
+```
+
+```bash macOS
+yarn release:mac
+```
+
+```bash Linux
+yarn release:linux
+```
+
+```bash Windows
+yarn release:windows
+```
+
+</CodeGroup>
+
+Binaries are written to the `dist/` directory. Each release script calls `scripts/create-release.mjs` internally.
+
+## Running tests
+
+RedEye uses [Cypress](https://www.cypress.io/) for end-to-end tests. There are separate test suites for Red Team and Blue Team modes.
+
+```bash
+# Open the Cypress Test Runner (Red Team suite)
+yarn test
+
+# Open Cypress for Blue Team mode
+yarn cy:open-blue
+
+# Start the app in a mode suitable for Cypress (built client + live server)
+yarn start:test-app
+```
+
+The `yarn test` command is an alias for `yarn cy:open`, which runs `moon run @redeye/e2e:open-cy`.
+
+<Note>
+  Cypress test status badges for both Red Team and Blue Team suites are tracked in the [Cypress Cloud](https://cloud.cypress.io/projects/rsybgk/runs).
+</Note>
+
+## Other useful scripts
+
+| Script | Description |
+|--------|-------------|
+| `yarn build` | Run a full Moon build across all packages |
+| `yarn lint` | Run ESLint on the client package |
+| `yarn format` | Run Prettier across all packages via Moon |
+| `yarn add-changeset` | Create a new changeset entry for your PR |
+| `yarn create-migrations` | Generate and apply new database migrations |
+
+## Platform notes
+
+- **macOS**: El Capitan and newer. On first run you may see an "unidentified developer" warning — go to **System Preferences → Security & Privacy → General** and click **Open Anyway**.
+- **Linux**: Ubuntu 18+, Kali 2020.1+. Other distributions may work but are untested.
+- **Windows**: Windows 7 and newer. ARM support is experimental.

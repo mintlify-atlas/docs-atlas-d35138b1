@@ -1,0 +1,97 @@
+---
+title: "Uploading campaigns"
+description: "Import C2 log data into RedEye from Cobalt Strike, Brute Ratel, Sliver, or .redeye files"
+---
+
+After logging in, RedEye takes you to the campaign cards screen. This is your home base for uploading new campaigns and managing ones you've already imported.
+
+## Upload methods
+
+RedEye supports three ways to import campaign data:
+
+<CardGroup cols={3}>
+  <Card title="Cobalt Strike" icon="crosshairs">
+    Upload single-server or multi-server log folders from Cobalt Strike engagements
+  </Card>
+  <Card title="Brute Ratel" icon="shield">
+    Upload and visualize log folders from Brute Ratel C2 campaigns
+  </Card>
+  <Card title=".redeye file" icon="database">
+    Import a previously exported campaign database (`.redeye` or `.sqlite`)
+  </Card>
+</CardGroup>
+
+## Uploading a Cobalt Strike campaign
+
+<Steps>
+  <Step title="Click Add a campaign">
+    From the campaign cards screen, click the **Add a campaign** button.
+  </Step>
+  <Step title="Select Cobalt Strike">
+    Choose the **Cobalt Strike** option from the upload dialog.
+  </Step>
+  <Step title="Upload your log folder">
+    Upload a single-server or multi-server folder containing your Cobalt Strike logs.
+  </Step>
+  <Step title="Review removed files">
+    RedEye automatically removes files that are not necessary for parsing. To see which files were removed, hover over the **File Removed** icon after upload.
+  </Step>
+</Steps>
+
+<Tip>
+  You can upload multi-server folder structures directly. RedEye handles the nested layout automatically and strips irrelevant files so only the parseable log data is retained.
+</Tip>
+
+## Uploading a Brute Ratel campaign
+
+<Steps>
+  <Step title="Click Add a campaign">
+    From the campaign cards screen, click the **Add a campaign** button.
+  </Step>
+  <Step title="Select Brute Ratel">
+    Choose the **Brute Ratel** option from the upload dialog.
+  </Step>
+  <Step title="Upload your log folder">
+    Select the folder containing your Brute Ratel campaign logs. RedEye parses and visualizes the data automatically.
+  </Step>
+</Steps>
+
+## Uploading a .redeye file
+
+If you received a campaign exported from another RedEye instance, upload it using the `.redeye` file option.
+
+<Steps>
+  <Step title="Click Add a campaign">
+    From the campaign cards screen, click the **Add a campaign** button.
+  </Step>
+  <Step title="Select .redeye file">
+    Choose the **.redeye file** option from the upload dialog.
+  </Step>
+  <Step title="Select the file">
+    Upload a file ending in `.redeye` or `.sqlite`. These files are typically campaigns that were previously exported from RedEye.
+  </Step>
+</Steps>
+
+<Note>
+  The `.redeye` format is a portable SQLite database. Blue Team members typically receive campaigns in this format for read-only review.
+</Note>
+
+## Managing existing campaigns
+
+### Filtering campaigns
+
+If you have many campaigns, use the filter input next to the **Add a campaign** button to search through your list. Type any part of a campaign name to narrow down the results.
+
+### Renaming, deleting, and exporting
+
+For each campaign card, click the **More** icon (the three-dot menu) to access these actions:
+
+| Action | Description |
+|--------|-------------|
+| **Rename** | Change the display name of the campaign |
+| **Delete** | Permanently remove the campaign from RedEye |
+| **Export** | Save the campaign as a `.redeye` database file for sharing or archiving |
+
+<Warning>
+  Deleting a campaign is permanent. Export the campaign first if you want to preserve the data, including any comments and tags you've added.
+</Warning>

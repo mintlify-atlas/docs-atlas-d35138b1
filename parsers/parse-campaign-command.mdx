@@ -1,0 +1,266 @@
+---
+title: 'The parse-campaign command'
+description: "Implement the parse-campaign command to transform C2 log files into RedEye data format"
+---
+
+The `parse-campaign` command does the core work of your parser: it reads the uploaded C2 log files and returns structured data that RedEye stores in its database.
+
+## Invocation
+
+RedEye invokes your parser with the path to a folder containing the user's uploaded files:
+
+```bash
+<parser-name> parse-campaign --folder </path/to/folder>
+```
+
+The `--folder` argument is always at `process.argv[4]` (after the binary name, the `parse-campaign` subcommand, and the `--folder` flag).
+
+```typescript
+const folderPath = process.argv[4].replaceAll('"', '');
+```
+
+<Note>
+Strip surrounding quotes from the path before using it, as shown above. The path may be wrapped in quotes depending on the OS and folder name.
+</Note>
+
+## Required output
+
+Your parser must write a single `[DATA]` message to stdout containing a JSON object that matches the `ParserOutput` interface:
+
+```typescript
+interface ParserOutput {
+	servers: { [server: string]: ParserServer };
+	hosts: { [host: string]: ParserHost };
+	beacons: { [beacon: string]: ParserBeacon };
+	operators: { [operator: string]: ParserOperator };
+	commands: { [command: string]: ParserCommand };
+	links: { [link: string]: ParserLink };
+}
+```
+
+Write the output like this:
+
+```typescript
+process.stdout.write('[DATA] ' + JSON.stringify(output) + '\n');
+```
+
+See [Parser data structures](/parsers/data-structures) for the full interface reference.
+
+## Full implementation example
+
+The following example parses a simple fabricated C2 log file called `c2-log-files.txt`:
+
+```
+2023-08-17T19:37:41 [INIT] <thor> server - name: server1; type: https;
+2023-08-17T19:38:41 [INIT] <thor> beacon - name: beacon1; from: server1; procces: explorer.exe; pid: 1234; port: 443; - on: host1; ip: 192.168.23.1; os: Windows 10.0.19041;
+2023-08-17T19:39:41 [COMMAND] <thor> beacon1 - mitre: T1057 - ps
+2023-08-17T19:40:11 [OUTPUT]
+***
+[System Process]	0	0
+System	0	4
+Registry	4	68
+smss.exe	4	268
+***
+2023-08-17T19:44:23 [INIT] <thor> beacon - name: beacon2; from: beacon1; procces: notepad.exe; pid: 3456; port: 443; - on: host1; ip: 192.168.23.1; os: Windows 10.0.19041;
+```
+
+Here is the complete parser that reads this format:
+
+```typescript custom-redeye-parser
+#!/usr/bin/env node
+import fileSystem from 'fs';
+
+function parseLogFile() {
+	const logPath = process.argv[4].replaceAll('"', ''); // Get the path and remove the quotes around it
+	const logFile = fileSystem.readFileSync(`${logPath}/c2-log-files.txt`, 'utf8'); // Read the log file from the path passed in the command
+	const lines = logFile.split('\n'); // Split the log file into lines
+	const output = {
+		// Create an empty object to store our output
+		servers: {},
+		hosts: {},
+		beacons: {},
+		operators: {},
+		commands: {},
+		links: {},
+	};
+
+	const totalLines = lines.length;
+	while (lines.length > 0) {
+		// Iterate over each line in the log file
+		const line = lines.shift(); // Get the first line in the log file
+		if (!line.length) {
+			break; // If the line is empty, break out of the loop
+		}
+		const [messageInfo, ...message] = line.split(' - '); // Split the line into its parts
+		const [timestamp, type, operatorItem, source] = messageInfo.split(' '); // Split the line into its parts
+		const operator = operatorItem.replace('<', '').replace('>', ''); // Get the operator name
+		if (type === '[INIT]') {
+			// Check if the line is an INIT message
+			const properties = getProperties(message[0]);
+
+			if (source === 'server') {
+				output.servers[properties.name] = {
+					// Create a new server object
+					name: properties.name,
+					type: properties.type,
+				};
+			}
+
+			if (source === 'beacon') {
+				const hostProperties = getProperties(message[1]);
+				output.beacons[properties.name] = {
+					// Create a new beacon object
+					name: properties.name,
+					host: hostProperties.on,
+					process: properties.process,
+					processId: properties.pid,
+					port: properties.port,
+					server: properties.server,
+				};
+				output.links[`${properties.name}-${properties.from}`] = {
+					// Create a new link object
+					source: properties.name,
+					target: properties.from,
+				};
+				if (!output.hosts[hostProperties.on]) {
+					const [os, osVersion] = hostProperties.os.split(' '); // Get the os and os version of the host
+					output.hosts[hostProperties.on] = {
+						name: hostProperties.on,
+						ip: hostProperties.ip,
+						os: os,
+						osVersion: osVersion,
+					};
+				}
+			}
+		}
+		if (type === '[COMMAND]') {
+			// Check if the line is a COMMAND message
+			const [commandProps, command] = message;
+			const properties = getProperties(commandProps);
+			const inputLineNumber = totalLines - lines.length;
+
+			// Get the command output
+			let commandOutput = '';
+
+			const [commandOutputTimestamp] = lines.shift().split(' ');
+			lines.shift(); // Move past starting *** line
+			while (lines[0] !== '***') {
+				commandOutput += lines.shift() + '\n';
+			}
+			lines.shift(); // Move past ending *** line
+			const outputLineNumber = totalLines - lines.length;
+
+			// Create a new command object
+			output.commands[`${command}-${source}-${timestamp}`] = {
+				attackIds: properties.mitre.split(','),
+				input: {
+					blob: command,
+					dateTime: timestamp,
+					logType: 'BEACON',
+					lineType: 'INPUT',
+					filePath: process.argv[4],
+					lineNumber: inputLineNumber,
+				},
+				output: {
+					blob: commandOutput,
+					dateTime: commandOutputTimestamp,
+					logType: 'BEACON',
+					lineType: 'OUTPUT',
+					filePath: process.argv[4],
+					lineNumber: outputLineNumber,
+				},
+				beacon: source,
+				operator: operator,
+			};
+		}
+	}
+
+	process.stdout.write('[DATA] ' + JSON.stringify(output) + '\n');
+}
+
+function getProperties(message) {
+	const properties = {};
+	for (const property of message.split('; ')) {
+		const [key, value] = property.split(': ');
+		properties[key] = value;
+	}
+	return properties;
+}
+
+if (process.argv[2] === 'parse-campaign') {
+	parseLogFile();
+}
+```
+
+## What the output looks like
+
+For the example log file above, the parser produces the following `ParserOutput` object:
+
+```json
+{
+	"servers": {
+		"server1": { "name": "server1", "type": "https" }
+	},
+	"hosts": {
+		"host1": { "name": "host1", "ip": "192.168.23.1", "os": "Windows", "osVersion": "10.0.19041" }
+	},
+	"beacons": {
+		"beacon1": {
+			"name": "beacon1",
+			"process": "explorer.exe",
+			"pid": "1234",
+			"port": "443",
+			"host": "host1",
+			"server": "server1"
+		},
+		"beacon2": {
+			"name": "beacon2",
+			"process": "notepad.exe",
+			"pid": "3456",
+			"port": "443",
+			"host": "host1",
+			"server": "server1"
+		}
+	},
+	"operators": {
+		"thor": { "name": "thor" }
+	},
+	"links": {
+		"server1-beacon1": { "from": "server1", "to": "beacon1" },
+		"beacon1-beacon2": { "from": "beacon1", "to": "beacon2" }
+	},
+	"commands": {
+		"ps-beacon1-2023-08-17T19:39:41": {
+			"attackIds": ["T1057"],
+			"input": {
+				"blob": "ps",
+				"dateTime": "2023-08-17T19:39:41",
+				"logType": "BEACON",
+				"lineType": "INPUT",
+				"filePath": "/path/to/folder",
+				"lineNumber": 3
+			},
+			"output": {
+				"blob": "[System Process]\t0\t0\nSystem\t0\t4\n...",
+				"dateTime": "2023-08-17T19:40:11",
+				"logType": "BEACON",
+				"lineType": "OUTPUT",
+				"filePath": "/path/to/folder",
+				"lineNumber": 7
+			},
+			"beacon": "beacon1",
+			"operator": "thor"
+		}
+	}
+}
+```
+
+## Reporting progress
+
+For long-running parses, emit `[PROGRESS]` messages to update the progress indicator in the RedEye UI:
+
+```typescript
+process.stdout.write('[PROGRESS] ' + JSON.stringify({ percent: 50, message: 'Parsing beacon logs...' }) + '\n');
+```
+
+See [Message types](/parsers/message-types) for the full list of message types.

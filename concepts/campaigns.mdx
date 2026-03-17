@@ -1,0 +1,207 @@
+---
+title: "Campaigns"
+description: "Understanding campaigns — the core organizational unit in RedEye"
+---
+
+A campaign is the top-level container in RedEye. It represents a complete C2 operation: the team servers, the hosts they compromised, the beacons that ran on those hosts, every command the operators executed, and all analyst annotations applied to those commands.
+
+When you upload C2 logs, RedEye parses them and stores the result in a campaign. Everything else in RedEye — the graph, the timeline, comments, presentations, exports — operates within the context of a single campaign.
+
+## Campaign lifecycle
+
+<Steps>
+  <Step title="Upload">
+    Import raw C2 log files from a supported framework, or load a previously exported `.redeye` file. RedEye parses the logs and populates the campaign database with servers, hosts, beacons, operators, and commands.
+  </Step>
+  <Step title="Explore">
+    Open the campaign to review the network graph, browse beacons and hosts, replay activity on the timeline, and run searches across the full dataset.
+  </Step>
+  <Step title="Annotate">
+    Add comments and tags to commands to document findings, identify MITRE ATT&CK techniques, flag important moments, and group related activity across multiple commands.
+  </Step>
+  <Step title="Present">
+    Use presentation mode to walk through annotated findings in a slide-style format organized by tag and ordered by time.
+  </Step>
+  <Step title="Export">
+    Export the campaign as a `.redeye` file for archiving or Blue Team handoff. Apply anonymization options before exporting to scrub sensitive client data.
+  </Step>
+</Steps>
+
+## Supported campaign sources
+
+RedEye accepts log data from several C2 frameworks. Each source type maps to a parser that converts raw log files into the internal campaign data model.
+
+| Source | Upload type | Notes |
+|--------|------------|-------|
+| **Cobalt Strike** | Folder (single-server or multi-server) | RedEye automatically removes non-essential files from the upload |
+| **Brute Ratel** | Folder | Upload, parse, and visualize Brute Ratel campaign data |
+| **Sliver** | Folder | Log folder upload |
+| **.redeye / .sqlite** | File | Previously exported RedEye campaign databases |
+
+<Note>
+  If you start the server without specifying any parsers, only `.redeye` file uploads are supported. RedEye logs a message at startup if no parsers are found: _"No parsers specified in config, only .redeye files can be uploaded."_
+</Note>
+
+## The .redeye file format
+
+A `.redeye` file is a SQLite database. It is the canonical export format for RedEye campaigns and the only format accepted by Blue Team mode.
+
+The file encapsulates the entire campaign:
+
+- All team servers
+- All target hosts and their metadata
+- All beacons and their metadata (IP, PID, process, username, communication type, color, shape)
+- All operators
+- All commands with their inputs, outputs, and MITRE annotations
+- All analyst annotations (comments, tags, favorites)
+- All images and file transfer records
+
+You can open `.redeye` files with any SQLite viewer for raw inspection, or load them into RedEye for full visual exploration.
+
+## Campaign data model
+
+The following GraphQL types represent the core entities stored in a campaign.
+
+### Campaign
+
+```graphql
+type Campaign {
+  id: String!
+  name: String!
+  annotationCount: Int!
+  beaconCount: Int!
+  commandCount: Int!
+  computerCount: Int!
+  serverCount: Int!
+  firstLogTime: DateTime
+  lastLogTime: DateTime
+  parsingStatus: ParsingStatus!
+  parsers: [CampaignParser!]
+  creator: GlobalOperator
+  lastOpenedBy: GlobalOperator
+}
+```
+
+The `parsingStatus` field tracks progress through the parsing pipeline:
+
+| Status | Meaning |
+|--------|---------|
+| `NOT_READY_TO_PARSE` | Campaign created but no servers added yet |
+| `PARSING_NOT_STARTED` | Ready to parse but not yet initiated |
+| `PARSING_QUEUED` | Queued, waiting for parser bandwidth |
+| `PARSING_IN_PROGRESS` | Parsing is currently running |
+| `PARSING_COMPLETED` | Parsing finished successfully |
+| `PARSING_FAILURE` | Parsing encountered an error |
+| `LIVE_PARSING_CS` | Live Cobalt Strike parsing in progress |
+
+### Beacon
+
+```graphql
+type Beacon {
+  id: String!
+  beaconName: String!
+  displayName: String
+  hidden: Boolean
+  host: Host
+  serverId: String!
+  meta: [BeaconMeta!]!
+  mitreTechniques: [MitreTechniques]
+  commandsCount: Float!
+  commentsCount: Float!
+  logsCount: Float!
+}
+```
+
+### Host
+
+```graphql
+type Host {
+  id: String!
+  hostName: String!
+  displayName: String
+  hidden: Boolean
+  cobaltStrikeServer: Boolean
+  beaconIds: [String!]!
+  meta: [HostMeta!]!
+  commandsCount: Float!
+  commentCount: Float!
+}
+```
+
+### Command
+
+```graphql
+type Command {
+  id: String!
+  inputText: String!
+  input: LogEntry!
+  output: [LogEntry!]!
+  beacon: Beacon!
+  operator: Operator
+  commandFailed: Boolean!
+  attackIds: [String!]
+  mitreTechniques: [MitreTechniques]
+  commandGroups: [CommandGroup!]!
+  commentsCount: Float!
+}
+```
+
+### Annotation
+
+```graphql
+type Annotation {
+  id: String!
+  text: String!
+  date: DateTime!
+  user: String!
+  favorite: Boolean!
+  tags: [Tag!]
+  tagCount: Float!
+  commandCount: Float!
+  commandIds: [String]
+  commandGroupId: String
+  generation: GenerationType!
+}
+```
+
+The `generation` field indicates how the annotation was created:
+
+- `PROCEDURAL` — generated automatically by the parser
+- `PROCEDURAL_MODIFIED` — auto-generated and then edited by an analyst
+- `MANUAL` — created entirely by an analyst
+
+## Campaign management
+
+From the campaign cards screen, you can manage existing campaigns:
+
+- **Rename** — change the display name of a campaign
+- **Delete** — permanently remove a campaign and all its data
+- **Export** — export the campaign as a `.redeye` file
+
+To access these actions, click the **More** icon on a campaign card.
+
+### Anonymization on export
+
+When you export a campaign, RedEye offers the following anonymization options:
+
+```graphql
+input AnonymizationInput {
+  replaceHostnames: Boolean
+  replaceDomainsAndIps: Boolean
+  replaceUsernames: Boolean
+  removeKeystrokes: Boolean
+  removePasswordsHashes: Boolean
+  removeScreenshots: Boolean
+  removeHidden: Boolean
+  findReplace: [FindReplaceInput!]
+}
+```
+
+Use `findReplace` to substitute specific strings — for example, replace a client's actual project codename with a generic placeholder before sharing the file.
+
+## Related
+
+- [Red Team mode](/concepts/red-team-mode) — how to upload, annotate, and export campaigns
+- [Blue Team mode](/concepts/blue-team-mode) — how to receive and explore exported campaigns
+- [Beacons and hosts](/concepts/beacons-and-hosts) — detailed reference for beacon and host data models
+- [Uploading campaigns](/guide/uploading-campaigns) — step-by-step upload instructions

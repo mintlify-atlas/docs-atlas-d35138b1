@@ -1,0 +1,103 @@
+---
+title: "Comments and tags"
+description: "Annotate commands with comments and tags to document findings for reporting"
+---
+
+Comments are the primary way to document your findings in RedEye. You attach comments to one or more commands, add tags to categorize them, and optionally mark them as favorites. Comments and tags power the [Presentations](/guide/presentations) feature, turning your annotations into structured slide decks.
+
+## Adding a comment to a single command
+
+<Steps>
+  <Step title="Locate the command">
+    Navigate to the command you want to annotate. Commands appear in the Explorer panel when you select a beacon or host, and in the Command Types tab.
+  </Step>
+  <Step title="Hover over the command">
+    Move your cursor over the command row. An **Add Comment** button appears on the right side of the row.
+  </Step>
+  <Step title="Click Add Comment">
+    Click **Add Comment** to open the comment dialog.
+  </Step>
+  <Step title="Fill in the comment">
+    The comment dialog has three fields:
+    - **Favorite** — toggle to mark this comment as a favorite
+    - **Tags** — add one or more tags to categorize the finding
+    - **Text** — write your comment about the command
+  </Step>
+  <Step title="Save the comment">
+    Submit the dialog to save the comment. It appears in the **Comments** tab and will be available in presentations.
+  </Step>
+</Steps>
+
+## Multi-command comments
+
+When a single finding spans multiple commands — for example, a lateral movement sequence involving several steps — you can group them under one comment.
+
+<Steps>
+  <Step title="Enable selection mode">
+    In the command list, use the checkboxes to select each command you want to include.
+  </Step>
+  <Step title="Select the commands">
+    Check the box next to each command that belongs to this finding. You can select as many commands as needed.
+  </Step>
+  <Step title="Click Comment on commands">
+    After selecting commands, click the **Comment on commands** button that appears at the top of the command list.
+  </Step>
+  <Step title="Fill in the comment">
+    The comment dialog opens with the same fields as a single-command comment: favorite toggle, tags, and text. This comment is linked to all selected commands.
+  </Step>
+</Steps>
+
+<Note>
+  Multi-command comments appear in the **Comments** tab with all their linked commands listed. In presentations, the slide for a multi-command comment displays the context of all associated commands.
+</Note>
+
+## Adding a command to an existing comment
+
+If you want to attach an additional command to a comment you already created:
+
+1. Hover over the command you want to add
+2. Click the option to add it to an existing comment group
+3. Select the target comment from the list
+
+This is useful when you discover a related command after already annotating part of a sequence.
+
+## Understanding tags
+
+Tags are labels you attach to comments to group findings by theme or category. Common examples include:
+
+- `Privilege Escalation`
+- `Lateral Movement`
+- `Credential Access`
+- `Persistence`
+- `Exfiltration`
+
+Tags directly determine how presentations are organized. Each unique tag in your campaign generates a separate presentation in the [Presentations](/guide/presentations) view, making it easy to tell a focused story about each category of activity.
+
+<Tip>
+  Use consistent tag names across a campaign. Tags are case-sensitive, and variations like `lateral movement` and `Lateral Movement` will create separate presentations.
+</Tip>
+
+## Comment metadata
+
+Every comment records the following metadata automatically:
+
+| Field | Description |
+|-------|-------------|
+| **User** | The operator who created the comment |
+| **Date** | Timestamp when the comment was created |
+| **Favorite** | Whether the comment is marked as a favorite |
+| **Tags** | Any tags attached to the comment |
+| **Text** | The comment body |
+
+## Managing comments
+
+From the **Comments** tab in the Explorer, you can manage all comments in the campaign:
+
+- **Edit** — update the comment text or add and remove tags
+- **Reply** — add a threaded response to a comment
+- **Favorite** — toggle the favorite status
+- **Delete** — permanently remove the comment
+
+<Warning>
+  Deleting a comment removes it from the Comments tab, all associated presentations, and any favorites collections. This action cannot be undone.
+</Warning>

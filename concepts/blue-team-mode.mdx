@@ -1,0 +1,108 @@
+---
+title: "Blue Team mode"
+description: "Read-only mode for reviewing exported campaigns from Red Team assessments"
+---
+
+Blue Team mode is the default operating mode of RedEye. It provides a simplified, read-only interface for reviewing campaign data that a Red Team has curated, annotated, and exported. No password is required to start the server, and no log parsing takes place — you load pre-exported `.redeye` files and explore the data.
+
+<Info>
+  Both Red Team mode and Blue Team mode run from the same `RedEye` binary. Blue Team mode is the default — you do not need any flags to use it.
+</Info>
+
+## Starting in Blue Team mode
+
+<Tabs>
+  <Tab title="Double-click">
+    Double-click the `RedEye` executable in your file manager. The server starts and opens the web app in your default browser automatically.
+  </Tab>
+  <Tab title="Terminal">
+    Run the binary with no flags:
+
+    ```bash
+    ./RedEye
+    ```
+
+    The server starts on port `4000` by default. Navigate to [http://127.0.0.1:4000](http://127.0.0.1:4000) if the browser does not open.
+  </Tab>
+</Tabs>
+
+To stop the server, close the terminal window (or the background process if you double-clicked the binary).
+
+## What you can do in Blue Team mode
+
+Blue Team mode gives you full read-only access to campaign data:
+
+- Browse the network graph of beacons, hosts, and team servers
+- Replay attack activity using the timeline scrubber
+- Read analyst comments and tags added by the Red Team
+- Review MITRE ATT&CK technique annotations on commands
+- Navigate presentation mode to walk through Red Team findings
+- Search across beacons, hosts, operators, commands, comments, and tags
+
+<Warning>
+  Blue Team mode is strictly read-only. You cannot upload raw log files, add comments, modify tags, or export campaigns. To perform those actions, start the server in [Red Team mode](/concepts/red-team-mode).
+</Warning>
+
+## Receiving a campaign from the Red Team
+
+The Red Team exports their findings as a `.redeye` file. There are two ways to load that file in Blue Team mode.
+
+### Option 1: Pre-load campaigns before handing off the binary
+
+This is the recommended approach for a clean handoff. The Red Team prepares a folder containing the `RedEye` binary and the exported campaign files:
+
+```
+Folder/
+    RedEye
+    campaigns/
+        Campaign-01.redeye
+        Campaign-02.redeye
+```
+
+When RedEye starts, it detects the `campaigns/` folder in the same directory as the binary and automatically imports every `.redeye` file inside. The Blue Team just double-clicks `RedEye` and all campaigns are ready to explore.
+
+To prepare this handoff package:
+
+<Steps>
+  <Step title="Copy the binary">
+    Copy the `RedEye` application binary to an empty folder.
+  </Step>
+  <Step title="Create the campaigns folder">
+    Create a `campaigns/` folder in the same directory as the binary.
+  </Step>
+  <Step title="Place .redeye files inside">
+    Copy the exported `.redeye` campaign files into the `campaigns/` folder.
+  </Step>
+  <Step title="Hand off the folder">
+    Send the entire folder — binary and campaigns — to the Blue Team. They double-click `RedEye` to start reviewing.
+  </Step>
+</Steps>
+
+### Option 2: Upload a .redeye file through the UI
+
+The Blue Team can also load `.redeye` files after startup using the upload dialog:
+
+1. Open the web app at [http://127.0.0.1:4000](http://127.0.0.1:4000).
+2. Click **+ Add Campaign**.
+3. Select the `.redeye` file tab.
+4. Upload the `.redeye` (or `.sqlite`) file.
+
+RedEye loads the file and adds the campaign to the campaign cards screen.
+
+## Navigating campaigns in Blue Team mode
+
+After loading a campaign, select it from the campaign cards screen to open the Explorer. From there you can:
+
+- **Hosts tab** — view all target machines, their associated beacons, and commands executed against each host
+- **Beacons tab** — browse all C2 agents, see command counts, and review MITRE technique tags
+- **Operators tab** — see which Red Team operators ran which beacons and commands
+- **Comments tab** — read all analyst annotations added by the Red Team, including multi-command comments and favorites
+- **Command Types tab** — see which command types were used and how often
+- **Timeline** — scrub through the campaign chronologically or replay activity in sequence
+- **Presentations** — step through slide-style presentations organized by tag
+
+## Related
+
+- [Red Team mode](/concepts/red-team-mode) — how campaigns are created, annotated, and exported
+- [Campaigns](/concepts/campaigns) — the `.redeye` file format and what it contains
+- [Beacons and hosts](/concepts/beacons-and-hosts) — how RedEye models C2 agents and target machines

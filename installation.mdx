@@ -1,0 +1,179 @@
+---
+title: "Installation"
+description: "Install RedEye on Linux, macOS, or Windows — binary download or local build"
+---
+
+RedEye supports three installation methods: downloading a pre-built binary, building from source, or running with Docker Compose.
+
+## Platform requirements
+
+For the **binary download**, no additional software is required.
+
+For a **local build from source**, you need:
+
+- [Node.js](https://nodejs.org/en/) >= v16
+- [yarn](https://yarnpkg.com/) (installed via npm)
+
+## Installation methods
+
+<Tabs>
+  <Tab title="Binary">
+    ### Download a pre-built binary
+
+    Download the latest release for your platform from the [RedEye Releases page](https://github.com/cisagov/RedEye/releases).
+
+    Each release includes:
+
+    - The `RedEye` application binary
+    - A `parsers` folder with log parser binaries (e.g. `cobalt-strike-parser`, `brute-ratel-parser`)
+
+    Place both items in the same working directory before running the binary.
+
+    ### Platform support
+
+    | Platform | Supported versions |
+    | -------- | ------------------ |
+    | **Linux** | Ubuntu 18+, Kali Linux 2020.1+. Other distributions may work but are untested. |
+    | **macOS** | El Capitan (10.11) and newer |
+    | **Windows** | Windows 7 and newer. ARM support is experimental. |
+
+    <Warning>
+      **macOS only:** When running RedEye for the first time, macOS may display a "not verified" error. Open **System Preferences** > **Security & Privacy** > **General** and click **Open Anyway** to proceed. See the [Apple support page](https://support.apple.com/guide/mac-help/open-a-mac-app-from-an-unidentified-developer-mh40616/) for more details.
+    </Warning>
+
+    After downloading, start the server:
+
+    ```bash
+    ./RedEye --redTeam --password <your_password>
+    ```
+
+    See the [Quickstart](/quickstart) guide for full startup instructions.
+  </Tab>
+
+  <Tab title="Local build">
+    ### Build from source
+
+    Clone the repository and install dependencies.
+
+    <Steps>
+      <Step title="Install Node.js and yarn">
+        Install [Node.js >= v16](https://nodejs.org/en/), then install yarn globally:
+
+        ```bash
+        npm install -g yarn
+        ```
+      </Step>
+
+      <Step title="Install dependencies">
+        From the root of the cloned repository, install all package dependencies:
+
+        ```bash
+        yarn install
+        ```
+      </Step>
+
+      <Step title="Build the binary">
+        Build a release binary for your target platform:
+
+        <CodeGroup>
+
+        ```bash All platforms
+        yarn release:all
+        ```
+
+        ```bash macOS only
+        yarn release:mac
+        ```
+
+        ```bash Linux only
+        yarn release:linux
+        ```
+
+        ```bash Windows only
+        yarn release:windows
+        ```
+
+        </CodeGroup>
+
+        `yarn release:all` produces binaries for Linux, macOS, and Windows in a single run. The output binaries are placed in the `dist` directory.
+      </Step>
+    </Steps>
+
+    <Note>
+      If you want to run RedEye in development mode without building a binary, use `yarn start` to start both the client and server in watch mode.
+    </Note>
+  </Tab>
+
+  <Tab title="Docker">
+    ### Run with Docker Compose
+
+    RedEye includes a `docker-compose.yml` for running the server in a container.
+
+    <Steps>
+      <Step title="Clone the repository">
+        ```bash
+        git clone https://github.com/cisagov/RedEye.git
+        cd RedEye
+        ```
+      </Step>
+
+      <Step title="Configure environment variables">
+        Open `docker-compose.yml` and update the environment variables for the `redeye-core` service:
+
+        ```yaml
+        services:
+          redeye-core:
+            image: redeye-core:latest
+            environment:
+              - NODE_ENV=production
+              - SERVER_BLUE_TEAM=false
+              - AUTHENTICATION_PASSWORD=your_password
+            ports:
+              - 4000:4000
+        ```
+
+        Set `SERVER_BLUE_TEAM=true` to run in Blue Team (read-only) mode, or `false` for Red Team mode. Set `AUTHENTICATION_PASSWORD` to a password of your choice.
+      </Step>
+
+      <Step title="Start the container">
+        ```bash
+        docker-compose -f docker-compose.yml up -d redeye-core
+        ```
+
+        The server starts on port 4000. Open [http://127.0.0.1:4000](http://127.0.0.1:4000) in your browser.
+      </Step>
+    </Steps>
+  </Tab>
+</Tabs>
+
+## Server configuration
+
+You can configure RedEye at runtime using CLI flags or a `config.json` file placed next to the `RedEye` binary.
+
+### CLI flags
+
+Run `./RedEye -h` to see all available options:
+
+```
+-d, --developmentMode [boolean]  put the database and server in development mode
+-r, --redTeam [boolean]          run the server in red team mode
+--port [number]                  the port the server should be exposed at
+-p, --password [string]          the password for user authentication
+--parsers [string...]            a list of parsers to use, or a flag to use all parsers in the parsers folder
+-t, --childProcesses [number]    max number of child processes the parser can use
+-h, --help                       display help for command
+```
+
+### config.json
+
+Create a `config.json` file in the same directory as the `RedEye` binary to set persistent configuration:
+
+```json
+{
+  "password": "your_password",
+  "redTeam": true,
+  "parsers": ["cobalt-strike-parser", "brute-ratel-parser"]
+}
+```
+
+The `parsers` field accepts either an array of parser names or a boolean (`true` to use all parsers in the `parsers` folder, `false` to disable parsing).

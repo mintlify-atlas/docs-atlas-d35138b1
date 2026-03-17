@@ -1,0 +1,112 @@
+---
+title: "Explorer"
+description: "Explore campaign data through the Hosts, Beacons, Operators, Comments, and Command Types tabs"
+---
+
+After uploading and opening a campaign, RedEye takes you to the **Explorer** panel on the left side of the screen. The Explorer gives you a structured view of all data in the campaign, organized across five tabs.
+
+## Hosts tab
+
+The **Hosts** tab lists all servers and target hosts linked to the campaign, including the C2 team server. Each row shows the host name and the total number of commands executed by beacons on that host.
+
+Select a host to see:
+- All commands executed by beacons on that host
+- Associated beacons, operators, comments, and metadata
+
+### Changing host color and shape
+
+To customize how a host appears in the graph:
+
+<Steps>
+  <Step title="Select the host">
+    Click on a host in the Hosts tab to load its detail view.
+  </Step>
+  <Step title="Open the Details tab">
+    In the right panel, click the **Details** tab.
+  </Step>
+  <Step title="Choose a color and shape">
+    Select your preferred color and shape. The change is reflected immediately in the graph.
+  </Step>
+</Steps>
+
+## Operators tab
+
+The **Operators** tab lists every operator associated with the campaign. For each operator you can see:
+- The number of beacons they operated
+- The total number of commands they executed
+
+Select an operator to filter the command view to only their activity.
+
+## Comments tab
+
+The **Comments** tab displays all comments that have been added to the campaign, including multi-command comments. From this tab you can:
+
+- **Favorite** a comment to include it in Favorite presentations
+- **Edit** a comment — update the text or add and remove tags
+- **Reply** to a comment to add a threaded response
+- **Delete** a comment
+
+<Tip>
+  Favoriting a comment makes it available in the **Favorite** presentation, which is a quick way to assemble your most important findings for a briefing.
+</Tip>
+
+## Beacons tab
+
+The **Beacons** tab lists every beacon in the campaign. Each row shows:
+- The beacon name
+- The total number of commands executed by that beacon
+- Tag icons indicating notable activity — for example **Privilege Escalation**, **Goldenticket**, **jump**, or **elevate**
+
+### Selecting a beacon
+
+Click any beacon in the list to load its detail view. The detail view shows:
+- **Commands** — every command executed by the beacon
+- **Operators** — which operators ran commands via this beacon
+- **Comments** — all comments associated with the beacon's commands
+- **Metadata** — beacon metadata such as IP address, process, PID, username, communication type, and timing
+
+### Changing beacon color and shape
+
+To customize how a beacon appears in the graph:
+
+<Steps>
+  <Step title="Select the beacon">
+    Click on a beacon in the Beacons tab to load its detail view.
+  </Step>
+  <Step title="Open the Details tab">
+    In the right panel, click the **Details** tab.
+  </Step>
+  <Step title="Choose a color and shape">
+    Select your preferred color and shape. The change is reflected immediately in the graph.
+  </Step>
+</Steps>
+
+## Command Types tab
+
+The **Command Types** tab shows every unique command that was executed across the campaign, along with the number of times it was run by any beacon.
+
+### Expanding raw logs
+
+Click on any command in the list to expand it and view the raw log output. In the expanded view you can:
+- See the MITRE ATT&CK technique categories associated with the command
+- Copy the raw log text to your clipboard
+
+MITRE technique categories that may appear include:
+
+| Category | Description |
+|----------|-------------|
+| `CredentialAccess` | Techniques for stealing credentials |
+| `PrivilegeEscalation` | Gaining higher-level permissions |
+| `LateralMovement` | Moving through the network |
+| `Discovery` | Enumerating the environment |
+| `Execution` | Running malicious code |
+| `Persistence` | Maintaining access over time |
+| `DefenseEvasion` | Avoiding detection |
+| `CommandAndControl` | Communicating with C2 infrastructure |
+| `Collection` | Gathering data of interest |
+| `Exfiltration` | Stealing data out of the environment |
+| `GoldenTicket` | Kerberos golden ticket attacks |
+
+<Note>
+  Raw log expansion is available from the Command Types tab. When you select a specific beacon first, the command list is scoped to that beacon's activity.
+</Note>

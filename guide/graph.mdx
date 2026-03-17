@@ -1,0 +1,103 @@
+---
+title: "Graph"
+description: "Interactive network graph showing the relationships between C2 servers, beacons, and hosts"
+---
+
+The graph is the central visualization in RedEye. It shows the full topology of a campaign — how beacons are linked to hosts, and how hosts and beacons connect back to the C2 team server.
+
+## Reading the graph
+
+The graph renders three types of nodes:
+
+| Node type | What it represents |
+|-----------|--------------------|
+| **Server node** | The C2 team server (e.g., Cobalt Strike server) |
+| **Host node** | A target machine that has one or more beacons running on it |
+| **Beacon node** | An individual beacon session running on a host |
+
+Edges between nodes represent communication links. The direction and structure of the links reflect how beacons pivot through the network (e.g., SMB beacons chaining through other beacons).
+
+## Interacting with nodes
+
+### Hovering over nodes
+
+- **Hover over a host node** — highlights the beacons linked to that host, making the connections easier to trace
+- **Hover over a beacon node** — highlights how that beacon connects to other beacons and the team server
+
+### Clicking a host node
+
+Clicking a host node opens the host's detail view in the Explorer panel, showing:
+- All commands executed by beacons on that host
+- Associated beacons
+- Operators who ran activity on that host
+- Comments attached to commands on the host
+- Host metadata (IP address, OS, type)
+
+### Clicking a beacon node
+
+Clicking a beacon node opens the beacon's detail view in the Explorer panel, showing:
+- All commands executed by the beacon
+- Operators who used the beacon
+- Comments on the beacon's commands
+- Beacon metadata (IP, process, PID, username, communication type, start/end time)
+
+## Graph controls
+
+The graph controls panel is located on the right side of the graph. It provides:
+
+| Control | Action |
+|---------|--------|
+| **Legend** | Toggle the graph legend showing node and edge types |
+| **Zoom in** | Increase zoom level |
+| **Zoom out** | Decrease zoom level |
+| **Reset** | Restore the graph to its default position and zoom level |
+
+## Customizing node appearance
+
+You can change the color and shape of any host or beacon node to visually distinguish important infrastructure.
+
+<Tabs>
+  <Tab title="Change host appearance">
+    <Steps>
+      <Step title="Select the host">
+        Click the host node in the graph, or select it from the **Hosts** tab in the Explorer.
+      </Step>
+      <Step title="Open the Details tab">
+        In the Explorer panel on the left, click the **Details** tab.
+      </Step>
+      <Step title="Select color and shape">
+        Choose a color and shape from the options provided. The graph updates immediately.
+      </Step>
+    </Steps>
+  </Tab>
+  <Tab title="Change beacon appearance">
+    <Steps>
+      <Step title="Select the beacon">
+        Click the beacon node in the graph, or select it from the **Beacons** tab in the Explorer.
+      </Step>
+      <Step title="Open the Details tab">
+        In the Explorer panel on the left, click the **Details** tab.
+      </Step>
+      <Step title="Select color and shape">
+        Choose a color and shape from the options provided. The graph updates immediately.
+      </Step>
+    </Steps>
+  </Tab>
+</Tabs>
+
+<Tip>
+  Use distinct colors for different privilege levels or network segments to make the campaign topology easier to explain to stakeholders during a presentation.
+</Tip>
+
+## Exporting the graph
+
+To save a snapshot of the current graph view as an image:
+
+1. Arrange the graph as you want it to appear in the export (use the zoom and drag controls)
+2. Click the **Export** button in the graph controls panel
+
+RedEye captures the graph exactly as displayed and saves it as an image file.
+
+<Note>
+  If you need to capture the graph without sensitive text visible, enable **Redacted Screenshot Mode** in [Settings](/guide/settings) before exporting.
+</Note>

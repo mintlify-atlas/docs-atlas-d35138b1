@@ -1,0 +1,477 @@
+---
+title: 'Parser data structures'
+description: 'Reference for the data structures RedEye parsers must output'
+---
+
+The `parse-campaign` command must return a JSON object matching the `ParserOutput` interface. This page documents every type in that interface.
+
+## ParserOutput
+
+The top-level object returned by `parse-campaign`. Every key is a dictionary indexed by a unique string name.
+
+```typescript
+interface ParserOutput {
+	servers: { [server: string]: ParserServer };
+	hosts: { [host: string]: ParserHost };
+	beacons: { [beacon: string]: ParserBeacon };
+	operators: { [operator: string]: ParserOperator };
+	commands: { [command: string]: ParserCommand };
+	links: { [link: string]: ParserLink };
+}
+```
+
+<ResponseField name="servers" type="object" required>
+  A map of server names to `ParserServer` objects. Servers are the C2 infrastructure operators use to control beacons.
+</ResponseField>
+
+<ResponseField name="hosts" type="object" required>
+  A map of host names to `ParserHost` objects. Hosts are the target machines in the network.
+</ResponseField>
+
+<ResponseField name="beacons" type="object" required>
+  A map of beacon names to `ParserBeacon` objects. Beacons are the agents running on hosts.
+</ResponseField>
+
+<ResponseField name="operators" type="object" required>
+  A map of operator names to `ParserOperator` objects. Operators are the people who send commands.
+</ResponseField>
+
+<ResponseField name="commands" type="object" required>
+  A map of unique command identifiers to `ParserCommand` objects.
+</ResponseField>
+
+<ResponseField name="links" type="object" required>
+  A map of link identifiers to `ParserLink` objects. Links connect servers to beacons and beacons to beacons.
+</ResponseField>
+
+---
+
+## ParserServer
+
+Represents a C2 server.
+
+```typescript
+interface ParserServer {
+	name: string;
+	type?: 'http' | 'https' | 'smb' | 'dns';
+}
+```
+
+<ResponseField name="name" type="string" required>
+  The name of the server.
+</ResponseField>
+
+<ResponseField name="type" type="string">
+  The protocol the server communicates over. Accepted values: `"http"`, `"https"`, `"smb"`, `"dns"`. Defaults to `"http"`.
+</ResponseField>
+
+**Example:**
+
+```json
+"servers": {
+	"server1": {
+		"name": "server1",
+		"type": "https"
+	}
+}
+```
+
+---
+
+## ParserHost
+
+Represents a target machine in the network.
+
+```typescript
+interface ParserHost {
+	name: string;
+	server: string;
+	ip?: string;
+	os?: string;
+	osVersion?: string;
+	type?: string;
+}
+```
+
+<ResponseField name="name" type="string" required>
+  The name of the host (e.g., the hostname or NetBIOS name).
+</ResponseField>
+
+<ResponseField name="server" type="string" required>
+  The name of the server that first ran a command or spawned a beacon on this host. Must match a key in `servers`.
+</ResponseField>
+
+<ResponseField name="ip" type="string">
+  The IP address of the host.
+</ResponseField>
+
+<ResponseField name="os" type="string">
+  The operating system of the host (e.g., `"Windows"`, `"Linux"`).
+</ResponseField>
+
+<ResponseField name="osVersion" type="string">
+  The OS version string (e.g., `"10.0.19041"`).
+</ResponseField>
+
+<ResponseField name="type" type="string">
+  The type of host, such as `"workstation"`, `"server"`, `"laptop"`, or `"virtual machine"`.
+</ResponseField>
+
+**Example:**
+
+```json
+"hosts": {
+	"host1": {
+		"name": "host1",
+		"server": "server1",
+		"ip": "192.168.23.1",
+		"os": "Windows",
+		"osVersion": "10.0.19041"
+	}
+}
+```
+
+---
+
+## ParserBeacon
+
+Represents a C2 agent running on a host.
+
+```typescript
+interface ParserBeacon {
+	name: string;
+	server: string;
+	host: string;
+	ip?: string;
+	type?: 'http' | 'https' | 'smb' | 'dns';
+	process?: string;
+	processId?: number;
+	port?: number;
+	startTime?: Date;
+	endTime?: Date;
+	files?: ParserFile[];
+	images?: ParserImage[];
+}
+```
+
+<ResponseField name="name" type="string" required>
+  The name of the beacon.
+</ResponseField>
+
+<ResponseField name="server" type="string" required>
+  The name of the server that spawned this beacon. Must match a key in `servers`.
+</ResponseField>
+
+<ResponseField name="host" type="string" required>
+  The name of the host this beacon runs on. Must match a key in `hosts`.
+</ResponseField>
+
+<ResponseField name="ip" type="string">
+  The IP address of the host as reported by the beacon.
+</ResponseField>
+
+<ResponseField name="type" type="string">
+  The beacon's communication protocol. Accepted values: `"http"`, `"https"`, `"smb"`, `"dns"`.
+</ResponseField>
+
+<ResponseField name="process" type="string">
+  The process name the beacon is injected into (e.g., `"explorer.exe"`).
+</ResponseField>
+
+<ResponseField name="processId" type="number">
+  The process ID of the beacon.
+</ResponseField>
+
+<ResponseField name="port" type="number">
+  The port the beacon communicates over.
+</ResponseField>
+
+<ResponseField name="startTime" type="Date">
+  The time the beacon was first observed or ran its first command.
+</ResponseField>
+
+<ResponseField name="endTime" type="Date">
+  The time the beacon ran its last command or was terminated.
+</ResponseField>
+
+<ResponseField name="files" type="ParserFile[]">
+  Files the beacon uploaded or downloaded. See `ParserFile` below.
+</ResponseField>
+
+<ResponseField name="images" type="ParserImage[]">
+  Screenshots or images captured by the beacon. See `ParserImage` below.
+</ResponseField>
+
+**Example:**
+
+```json
+"beacons": {
+	"beacon1": {
+		"name": "beacon1",
+		"server": "server1",
+		"host": "host1",
+		"process": "explorer.exe",
+		"processId": 1234,
+		"port": 443
+	}
+}
+```
+
+---
+
+## ParserOperator
+
+Represents a person who sends commands through the C2 server.
+
+```typescript
+interface ParserOperator {
+	name: string;
+	startTime?: Date;
+	endTime?: Date;
+}
+```
+
+<ResponseField name="name" type="string" required>
+  The operator's username or handle.
+</ResponseField>
+
+<ResponseField name="startTime" type="Date">
+  The time the operator sent their first command.
+</ResponseField>
+
+<ResponseField name="endTime" type="Date">
+  The time the operator sent their last command.
+</ResponseField>
+
+**Example:**
+
+```json
+"operators": {
+	"thor": { "name": "thor" }
+}
+```
+
+---
+
+## ParserCommand
+
+Represents a single command sent by an operator to a beacon, including its input and output.
+
+```typescript
+interface ParserCommand {
+	operator?: string;
+	beacon: string;
+	input: ParserLogEntry;
+	output?: ParserLogEntry;
+	attackIds?: string[];
+	commandFailed?: boolean;
+}
+```
+
+<ResponseField name="beacon" type="string" required>
+  The name of the beacon the command was sent to. Must match a key in `beacons`.
+</ResponseField>
+
+<ResponseField name="input" type="ParserLogEntry" required>
+  The command input log entry. See `ParserLogEntry` below.
+</ResponseField>
+
+<ResponseField name="operator" type="string">
+  The name of the operator who sent the command. Must match a key in `operators`.
+</ResponseField>
+
+<ResponseField name="output" type="ParserLogEntry">
+  The command output log entry. Omit if the command produced no output. See `ParserLogEntry` below.
+</ResponseField>
+
+<ResponseField name="attackIds" type="string[]">
+  MITRE ATT&CK technique IDs associated with this command (e.g., `["T1059", "T1059.001"]`). Defaults to `[]`.
+</ResponseField>
+
+<ResponseField name="commandFailed" type="boolean">
+  Whether the command failed or its output was not found in the logs. Defaults to `false`.
+</ResponseField>
+
+**Example:**
+
+```json
+"commands": {
+	"ps-beacon1-2023-08-17T19:39:41": {
+		"attackIds": ["T1057"],
+		"input": {
+			"blob": "ps",
+			"dateTime": "2023-08-17T19:39:41",
+			"logType": "BEACON",
+			"lineType": "INPUT",
+			"filepath": "/path/to/c2-log-files.txt",
+			"lineNumber": 3
+		},
+		"output": {
+			"blob": "[System Process]\t0\t0\nSystem\t0\t4\n",
+			"dateTime": "2023-08-17T19:40:11",
+			"logType": "BEACON",
+			"lineType": "OUTPUT",
+			"filepath": "/path/to/c2-log-files.txt",
+			"lineNumber": 4
+		},
+		"beacon": "beacon1",
+		"operator": "thor"
+	}
+}
+```
+
+---
+
+## ParserLogEntry
+
+Represents a single line or block of text in a log file. Used for command `input` and `output`.
+
+```typescript
+interface ParserLogEntry {
+	blob: string;
+	filepath?: string;
+	lineNumber?: number;
+	logType: 'BEACON' | 'EVENT' | 'DOWNLOAD' | 'WEBLOG' | 'KEYSTROKES' | 'UNKNOWN';
+	lineType?: 'METADATA' | 'INPUT' | 'TASK' | 'CHECKIN' | 'OUTPUT' | 'MODE' | 'ERROR' | 'INDICATOR';
+	dateTime?: Date;
+}
+```
+
+<ResponseField name="blob" type="string" required>
+  The raw text of the log entry — the command string, output text, or error message.
+</ResponseField>
+
+<ResponseField name="logType" type="string" required>
+  The category of log entry.
+
+  | Value | Description |
+  |---|---|
+  | `"BEACON"` | A standard beacon interaction log |
+  | `"EVENT"` | Miscellaneous server event (e.g., operator login) |
+  | `"DOWNLOAD"` | A file download from a beacon |
+  | `"WEBLOG"` | A web log entry |
+  | `"KEYSTROKES"` | A keystroke capture log |
+  | `"UNKNOWN"` | Any other log type |
+</ResponseField>
+
+<ResponseField name="lineType" type="string">
+  The sub-type of the log line when `logType` is `"BEACON"`.
+
+  | Value | Description |
+  |---|---|
+  | `"INPUT"` | The command sent to the beacon |
+  | `"OUTPUT"` | The response from the beacon |
+  | `"TASK"` | The C2 server acknowledging a queued command |
+  | `"CHECKIN"` | A beacon check-in with the server |
+  | `"ERROR"` | An error of any kind |
+  | `"METADATA"` | Miscellaneous beacon metadata |
+  | `"INDICATOR"` | An indicator of compromise |
+</ResponseField>
+
+<ResponseField name="filepath" type="string">
+  The local path to the log file that contains this entry. Used by RedEye to link back to the source file.
+</ResponseField>
+
+<ResponseField name="lineNumber" type="number">
+  The starting line number of this entry in the log file.
+</ResponseField>
+
+<ResponseField name="dateTime" type="Date">
+  The timestamp of the log entry.
+</ResponseField>
+
+---
+
+## ParserLink
+
+Represents a directed connection in the C2 network graph.
+
+```typescript
+interface ParserLink {
+	from: string;
+	to: string;
+}
+```
+
+<ResponseField name="from" type="string" required>
+  The origin of the link. Can be a server name or beacon name.
+</ResponseField>
+
+<ResponseField name="to" type="string" required>
+  The destination of the link. Must be a beacon name.
+</ResponseField>
+
+<Note>
+Use the convention `"<from>-<to>"` as the dictionary key for links to ensure uniqueness (e.g., `"server1-beacon1"` or `"beacon1-beacon2"`).
+</Note>
+
+**Example:**
+
+```json
+"links": {
+	"server1-beacon1": { "from": "server1", "to": "beacon1" },
+	"beacon1-beacon2": { "from": "beacon1", "to": "beacon2" }
+}
+```
+
+---
+
+## ParserFile
+
+Represents a file that a beacon uploaded or downloaded.
+
+```typescript
+interface ParserFile {
+	filePath: string;
+	fileName?: string;
+	dateTime: Date;
+	md5?: string;
+	fileFlag: 'DOWNLOAD' | 'UPLOAD';
+}
+```
+
+<ResponseField name="filePath" type="string" required>
+  The local path to the file that RedEye can access.
+</ResponseField>
+
+<ResponseField name="fileFlag" type="string" required>
+  Whether the file was downloaded from the host (`"DOWNLOAD"`) or uploaded to it (`"UPLOAD"`).
+</ResponseField>
+
+<ResponseField name="dateTime" type="Date" required>
+  The date and time the file was created or modified.
+</ResponseField>
+
+<ResponseField name="fileName" type="string">
+  A display name for the file if the local file name differs from the original.
+</ResponseField>
+
+<ResponseField name="md5" type="string">
+  The MD5 hash of the file.
+</ResponseField>
+
+---
+
+## ParserImage
+
+Represents a screenshot or image captured by a beacon.
+
+```typescript
+interface ParserImage {
+	filePath: string;
+	fileName?: string;
+	fileType: string;
+}
+```
+
+<ResponseField name="filePath" type="string" required>
+  The local path to the image that RedEye can access.
+</ResponseField>
+
+<ResponseField name="fileType" type="string" required>
+  The image file type (e.g., `"png"`, `"jpg"`).
+</ResponseField>
+
+<ResponseField name="fileName" type="string">
+  A display name for the image if the local file name differs from the original.
+</ResponseField>

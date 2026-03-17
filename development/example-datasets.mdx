@@ -1,0 +1,107 @@
+---
+title: "Example datasets"
+description: "Sample C2 campaign data for testing and exploring RedEye features"
+---
+
+RedEye ships three example datasets in the repository. They are located in [`applications/redeye-e2e/src/fixtures/`](https://github.com/cisagov/RedEye/tree/develop/applications/redeye-e2e/src/fixtures) and are used both for manual exploration and as fixtures for the Cypress test suite.
+
+## Datasets
+
+<CardGroup cols={2}>
+  <Card title="gt.redeye" icon="file">
+    The primary example dataset. Contains a complete Cobalt Strike campaign with multiple operators, beacons across two hosts (`192.168.23.131` and `192.168.23.132`), event logs, and web logs. This is the recommended dataset for exploring all of RedEye's features.
+  </Card>
+  <Card title="smalldata.redeye" icon="file">
+    A smaller dataset with four servers spread across two dates. Useful for quick imports and focused testing of specific features without the overhead of a large campaign.
+  </Card>
+  <Card title="testdata (Cobalt Strike logs)" icon="folder">
+    Raw Cobalt Strike log folders organized into 18 numbered server directories. Each directory contains dated subfolders with host subdirectories, `events.log`, and `weblog_80.log` files. Used for testing the parser pipeline from raw logs to parsed campaign.
+  </Card>
+  <Card title="sliver (Sliver logs)" icon="folder">
+    A Sliver C2 framework dataset including a `sliver.db` database file and client configuration. Used for testing the `@redeye/sliver-parser`.
+  </Card>
+</CardGroup>
+
+## Downloading datasets from GitHub
+
+The `.redeye` files can be downloaded directly:
+
+```bash
+# Download gt.redeye
+curl -L -o gt.redeye https://github.com/cisagov/RedEye/raw/develop/applications/redeye-e2e/src/fixtures/gt.redeye
+
+# Download smalldata.redeye
+curl -L -o smalldata.redeye https://github.com/cisagov/RedEye/raw/develop/applications/redeye-e2e/src/fixtures/smalldata.redeye
+```
+
+To download a raw log folder (e.g. `gtdataset` or `testdata`), use [download-directory.github.io](https://download-directory.github.io/). Paste the folder URL:
+
+```
+https://github.com/cisagov/RedEye/tree/develop/applications/redeye-e2e/src/fixtures/gtdataset
+```
+
+The tool downloads the folder as a ZIP file that you can extract locally.
+
+## Importing datasets into RedEye
+
+### Red Team mode — web UI upload
+
+<Steps>
+  <Step title="Start RedEye in Red Team mode">
+    ```bash
+    ./RedEye --redTeam --password <your_password>
+    ```
+  </Step>
+  <Step title="Open the web app">
+    Navigate to [http://127.0.0.1:4000](http://127.0.0.1:4000) in your browser.
+  </Step>
+  <Step title="Add a campaign">
+    Click **+ Add Campaign** and choose the upload type:
+
+    - **Upload `.redeye` file** — select `gt.redeye` or `smalldata.redeye` directly.
+    - **Upload log folder** — choose a parser (e.g. Cobalt Strike) and upload the extracted `gtdataset` or `testdata` folder.
+  </Step>
+</Steps>
+
+### Blue Team mode — campaigns folder
+
+If you place `.redeye` files in a `campaigns/` folder next to the `RedEye` binary before starting the server, RedEye automatically imports them on startup:
+
+```
+Folder/
+    RedEye
+    campaigns/
+        gt.redeye
+        smalldata.redeye
+```
+
+You can also use the **+ Add Campaign** dialog in Blue Team mode to upload a `.redeye` file manually after the server has started.
+
+<Note>
+  Blue Team mode only accepts pre-exported `.redeye` files. Raw C2 log parsing requires Red Team mode.
+</Note>
+
+## What each dataset demonstrates
+
+| Dataset | Hosts | Servers | Use case |
+|---|---|---|---|
+| `gt.redeye` | 2 (`COMPUTER02`, `COMPUTER03`) | 1 | Full workflow: graph, timeline, annotations, presentation mode |
+| `smalldata.redeye` | Multiple | 4 | Quick import, UI exploration with minimal data |
+| `testdata` | Multiple | 18 server directories | Parser stress testing, raw log ingestion |
+| `sliver` | Sliver clients | 1 | Sliver parser validation |
+
+## Dataset log format (Cobalt Strike)
+
+The `gtdataset` and `testdata` datasets follow the standard Cobalt Strike directory layout that the `cobalt-strike-parser` expects:
+
+```
+<server-folder>/
+  <date YYYYMMDD>/
+    <host-ip>/
+      beacon_<id>.log
+      keystrokes_<id>.log
+    events.log
+    weblog_80.log
+```
+
+Each `events.log` records operator activity (joins, file hosts, initial beacons). Beacon log files record individual check-ins, commands, and output.

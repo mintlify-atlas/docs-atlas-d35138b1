@@ -1,0 +1,96 @@
+---
+title: "Config file"
+description: "Configure the RedEye server using a config.json file placed alongside the binary"
+---
+
+Instead of passing flags every time you start the server, you can place a `config.json` file in the same directory as the `RedEye` binary. The server reads this file at startup and applies its values as defaults.
+
+## File location
+
+Place `config.json` next to the `RedEye` binary:
+
+```
+folder/
+  RedEye
+  config.json
+  parsers/
+    cobalt-strike-parser
+    brute-ratel-parser
+```
+
+## Properties
+
+| Property | Type | Default | Description |
+|----------|------|---------|-------------|
+| `password` | string | — | Password for user authentication. Required when `redTeam` is `true`. |
+| `redTeam` | boolean | `false` | Enable Red Team mode, which allows uploading C2 logs, editing data, and creating presentations. |
+| `port` | integer | `4000` | Port the server listens on. Must be a positive integer. |
+| `production` | boolean | `true` | Run in production mode. Set to `false` to enable development behaviors. |
+| `databaseMode` | string | `"PRODUCTION"` | Controls database behavior. One of `"PRODUCTION"`, `"DEV_PERSIST"`, or `"DEV_CLEAN"`. |
+| `secret` | string | random UUID | JWT signing secret. Use a strong, unique value in production deployments. |
+| `parsers` | boolean \| string[] | — | Parser configuration. Pass `true` to load all parsers from the `parsers/` folder, `false` to disable parsers, or an array of parser binary names to load specific parsers. |
+| `maxParserSubprocesses` | integer | `8` | Maximum number of child processes the parser can spawn. Must be a positive integer. |
+| `clientPort` | integer | `3500` | Informational only. Not used in production. |
+
+### `databaseMode` values
+
+| Value | Description |
+|-------|-------------|
+| `"PRODUCTION"` | Standard production behavior. |
+| `"DEV_PERSIST"` | Development mode — data is persisted between restarts. |
+| `"DEV_CLEAN"` | Development mode — database is wiped clean on each restart. |
+
+## Example config.json
+
+```json
+{
+  "password": "937038570",
+  "redTeam": true,
+  "port": 4000,
+  "parsers": ["cobalt-strike-parser", "brute-ratel-parser"]
+}
+```
+
+To load all parsers automatically from the `parsers/` folder:
+
+```json
+{
+  "password": "937038570",
+  "redTeam": true,
+  "parsers": true
+}
+```
+
+A full development configuration with all available options:
+
+```json
+{
+  "$schema": "./config.schema.json",
+  "password": "937038570",
+  "secret": "supertopsecretdonttellanyone",
+  "redTeam": true,
+  "production": false,
+  "databaseMode": "DEV_PERSIST",
+  "port": 4000,
+  "parsers": ["sliver-parser", "cobalt-strike-parser", "brute-ratel-parser"],
+  "maxParserSubprocesses": 8
+}
+```
+
+<Tip>
+  Add `"$schema": "./config.schema.json"` to your `config.json` to get autocomplete and validation in editors that support JSON Schema.
+</Tip>
+
+## CLI flags take precedence
+
+When both a `config.json` and CLI flags are provided, **CLI flags always win**. The server merges values in this order:
+
+1. Built-in defaults
+2. Values from `config.json`
+3. CLI flags (highest priority)
+
+For example, if `config.json` sets `"port": 4000` but you start the server with `--port 8080`, the server will listen on port `8080`.
+
+<Warning>
+  If `redTeam` is `true` and no `password` is set in either `config.json` or the CLI, the server will refuse to start.
+</Warning>

@@ -1,0 +1,119 @@
+---
+title: 'Built-in parsers'
+description: 'RedEye includes parsers for Cobalt Strike, Brute Ratel, and Sliver C2 frameworks'
+---
+
+RedEye ships with three parsers for common C2 frameworks. These parsers are pre-built binaries placed in the `parsers/` folder next to the RedEye server binary.
+
+## Cobalt Strike parser
+
+**Package:** `@redeye/cobalt-strike-parser`  
+**Binary name:** `cobalt-strike-parser`
+
+Parses Cobalt Strike beacon logs organized in the standard Campaign Folder structure. Cobalt Strike separates its data into server folders, each containing dated sub-folders of beacon log files.
+
+**Expected upload structure:**
+
+```
+Campaign_Folder/
+  Server_Folder_1/
+    200101/
+    200102/
+    200103/
+  Server_Folder_2/
+    200105/
+    200121/
+    200131/
+```
+
+**Upload settings:**
+
+| Setting | Value |
+|---|---|
+| Upload type | Directory |
+| Server delineation | Folder (server data separated into distinct subdirectories) |
+| Validation | Parser (uses `validate-files` command to verify folder structure) |
+| Blue team support | No |
+
+Upload a single Campaign Folder. RedEye infers server names from the top-level subdirectory names and allows you to rename them before importing.
+
+## Brute Ratel parser
+
+**Package:** `@redeye/brute-ratel-parser`  
+**Binary name:** `brute-ratel-parser`
+
+Parses Brute Ratel C2 log data from an `autosave.profile` file and the associated `logs/` folder.
+
+**Expected upload structure:**
+
+```
+brute-ratel-logs/
+  autosave.profile
+  logs/
+    ...
+```
+
+**Upload settings:**
+
+| Setting | Value |
+|---|---|
+| Upload type | Directory |
+| Server delineation | Database (server data is contained in a single config/profile file) |
+| Validation | Parser (uses `validate-files` to verify required files are present) |
+| Blue team support | No |
+
+## Sliver parser
+
+**Package:** `@redeye/sliver-parser`  
+**Binary name:** `sliver-parser`
+
+Parses Sliver C2 framework logs from a `sliver.db` SQLite database and associated JSON log files.
+
+**Expected upload structure:**
+
+```
+sliver-logs/
+  sliver.db
+  json_*.log
+  ...
+```
+
+**Upload settings:**
+
+| Setting | Value |
+|---|---|
+| Upload type | Directory |
+| Server delineation | Database (server data is contained in a single database file) |
+| Validation | Parser (uses `validate-files` to verify `sliver.db` and log files are present) |
+| Blue team support | No |
+
+## Enabling and disabling parsers
+
+Control which parsers RedEye loads via the `parsers` setting in `config.json`:
+
+```json config.json
+// Enable all parsers in the parsers/ folder
+{ "parsers": true }
+
+// Disable all parsers
+{ "parsers": false }
+
+// Enable only specific parsers by binary name
+{ "parsers": ["cobalt-strike-parser", "sliver-parser"] }
+```
+
+<Note>
+The `parsers/` folder must be in the same directory as the RedEye server binary. If you add a custom parser, place its binary there alongside the built-in ones.
+</Note>
+
+## Parser folder layout
+
+```
+redeye/           ← RedEye server binary lives here
+parsers/
+  cobalt-strike-parser
+  brute-ratel-parser
+  sliver-parser
+  your-custom-parser    ← Drop custom parsers here
+config.json
+```

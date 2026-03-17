@@ -1,0 +1,97 @@
+---
+title: 'Parser overview'
+description: 'How RedEye parsers work — the communication protocol between RedEye and parser binaries'
+---
+
+RedEye parsers are standalone command-line programs that transform C2 log data into the format RedEye needs to build its network graph. Each parser is an independent binary that lives in the `parsers/` folder alongside the RedEye server binary.
+
+RedEye ships with built-in parsers for [Cobalt Strike, Brute Ratel, and Sliver](/parsers/built-in-parsers). You can also [create a custom parser](/parsers/create-parser) for any C2 framework.
+
+## How RedEye discovers parsers
+
+RedEye detects parsers from the `parsers/` directory located next to the RedEye server binary. You control which parsers are active via the `parsers` setting in `config.json`:
+
+```json config.json
+{
+  "parsers": true
+}
+```
+
+| Value | Behavior |
+|---|---|
+| `true` | Enable all parsers found in the `parsers/` folder |
+| `false` | Disable all parsers |
+| `["cobalt-strike-parser"]` | Enable only the listed parsers by name |
+
+## Communication protocol
+
+RedEye communicates with parsers exclusively through the command line. Parsers communicate back to RedEye exclusively through standard output (stdout).
+
+**All messages from a parser must follow this format:**
+
+```
+[<TYPE>] <JSON>\n
+```
+
+For example:
+
+```
+[DATA] {"servers":{"server1":{"name":"server1","type":"https"}},...}\n
+```
+
+Each message ends with a newline character. RedEye reads one message per line.
+
+See [Message types](/parsers/message-types) for the full list of message types a parser can send.
+
+## Commands every parser must implement
+
+Every parser must respond to two commands:
+
+| Command | Purpose |
+|---|---|
+| `info` | Registers the parser with RedEye and configures the upload form |
+| `parse-campaign` | Processes uploaded files and returns parsed data |
+
+See [The info command](/parsers/info-command) and [The parse-campaign command](/parsers/parse-campaign-command) for implementation details.
+
+## Parser lifecycle
+
+<Steps>
+  <Step title="RedEye starts and queries each parser">
+    On startup, RedEye invokes `<parser-name> info` for each binary in the `parsers/` folder. The parser responds with its configuration — its display name, supported upload type, and UI form settings.
+  </Step>
+  <Step title="User selects a parser and uploads files">
+    In the RedEye "Add Campaign" dialog, the user sees a tab for each registered parser. The user selects a parser and uploads the C2 log files or directory it expects.
+  </Step>
+  <Step title="RedEye invokes parse-campaign">
+    RedEye writes the uploaded files to a temporary folder, then invokes:
+    ```bash
+    <parser-name> parse-campaign --folder </path/to/folder>
+    ```
+  </Step>
+  <Step title="Parser processes files and writes output">
+    The parser reads the files from `--folder`, transforms the data into the `ParserOutput` structure, and writes a `[DATA]` message to stdout:
+    ```bash
+    [DATA] {"servers":{...},"hosts":{...},"beacons":{...},...}\n
+    ```
+    The parser can also emit `[PROGRESS]`, `[LOG]`, and `[ERROR]` messages during processing.
+  </Step>
+  <Step title="RedEye stores the data">
+    RedEye reads the `[DATA]` message from stdout, validates the structure, and persists it to the database. The campaign then becomes available in the RedEye interface.
+  </Step>
+</Steps>
+
+## Data model
+
+The data a parser returns maps C2 concepts to RedEye entities:
+
+| Entity | Description |
+|---|---|
+| `servers` | C2 servers that operators use to send commands |
+| `hosts` | Target assets in the network (workstations, laptops, servers) |
+| `beacons` | C2 agents running on hosts |
+| `operators` | People who initiate commands through servers |
+| `commands` | Actions operators execute on beacons, with input and output |
+| `links` | Connections from servers to beacons, or beacons to beacons |
+
+See [Parser data structures](/parsers/data-structures) for the full interface reference.

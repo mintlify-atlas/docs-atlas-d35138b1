@@ -1,0 +1,223 @@
+---
+title: "Beacons and hosts"
+description: "How RedEye models C2 agents (beacons) and target machines (hosts)"
+---
+
+Beacons and hosts are the two core entities that represent the compromised environment in a RedEye campaign. Understanding the relationship between them is essential for navigating the graph and interpreting campaign data.
+
+## Beacons
+
+A beacon is a C2 agent running on a target machine. Each time an implant calls back to a team server, it is represented in RedEye as a beacon. Beacons carry all the operational detail: the commands that were run, the operators who ran them, the communication protocol used, and the process context on the target.
+
+```graphql
+type Beacon {
+  id: String!
+
+  """The name the C2 framework assigned to this beacon. Unique to a server."""
+  beaconName: String!
+
+  """Optional analyst-assigned display name."""
+  displayName: String
+
+  """Whether this beacon is hidden from the graph and listings."""
+  hidden: Boolean
+
+  """The host this beacon ran on."""
+  host: Host
+
+  """The team server this beacon reported to."""
+  serverId: String!
+
+  """Metadata snapshots extracted from beacon log lines."""
+  meta: [BeaconMeta!]!
+
+  """MITRE ATT&CK techniques observed across this beacon's commands."""
+  mitreTechniques: [MitreTechniques]
+
+  commandsCount: Float!
+  commentsCount: Float!
+  logsCount: Float!
+}
+```
+
+## Hosts
+
+A host is a target machine in the network. Hosts are the nodes in the graph. Each host can have multiple beacons — for example, if an operator ran multiple implants on the same machine, or if a beacon was migrated to a different process.
+
+```graphql
+type Host {
+  id: String!
+
+  """The computer's hostname as seen in the logs."""
+  hostName: String!
+
+  """Optional analyst-assigned display name."""
+  displayName: String
+
+  """Whether this host is hidden from the graph and listings."""
+  hidden: Boolean
+
+  """True if this is a Cobalt Strike team server node."""
+  cobaltStrikeServer: Boolean
+
+  """IDs of all beacons that ran on this host."""
+  beaconIds: [String!]!
+
+  """Metadata snapshots for this host."""
+  meta: [HostMeta!]!
+
+  commandsCount: Float!
+  commentCount: Float!
+}
+```
+
+## The server → beacon → host relationship
+
+RedEye organizes campaign data in a three-tier hierarchy:
+
+```
+Server (team server)
+└── Beacon (C2 agent)
+    └── Host (target machine)
+```
+
+Each beacon belongs to exactly one team server and is associated with exactly one host. A host can be associated with many beacons. This hierarchy is reflected in the graph: host nodes contain their beacons, and beacon nodes are connected to their team server.
+
+## Beacon metadata
+
+When RedEye parses C2 logs, it extracts a `BeaconMeta` record from each metadata log line. A single beacon can have multiple metadata records if its context changed over time (for example, after a process migration).
+
+```graphql
+type BeaconMeta {
+  id: String!
+
+  """Process ID the beacon ran under."""
+  pid: Int
+
+  """Process name the beacon ran under."""
+  process: String
+
+  """Username the beacon ran under."""
+  username: String
+
+  """IP address of the host at the time of this metadata line."""
+  ip: String
+
+  """Port used for the beacon's callback."""
+  port: Float
+
+  """Communication protocol used by the beacon."""
+  type: BeaconType
+
+  """Time the beacon first appeared."""
+  startTime: DateTime
+
+  """Time of the last command run by this beacon."""
+  endTime: DateTime
+
+  """Display color of the beacon node in the graph."""
+  color: NodeColors
+
+  """Display shape of the beacon node in the graph."""
+  shape: Shapes
+}
+```
+
+## Beacon communication types
+
+The `BeaconType` enum describes the communication protocol a beacon used to call back to its team server:
+
+| Value | Protocol |
+|-------|----------|
+| `http` | HTTP |
+| `https` | HTTPS |
+| `smb` | SMB named pipe (peer-to-peer) |
+| `dns` | DNS |
+
+<Info>
+  The schema defines four `BeaconType` values corresponding to the protocols supported by the built-in parsers. The `ServerType` enum uses the same values for team servers.
+</Info>
+
+## Beacon log line types
+
+Each line in a beacon's raw log has a `BeaconLineType` that identifies what kind of data it contains:
+
+| Value | Meaning |
+|-------|---------|
+| `CHECKIN` | Beacon check-in event |
+| `ERROR` | Error response from the C2 framework |
+| `INDICATOR` | Indicator of compromise data |
+| `INPUT` | Operator command input |
+| `METADATA` | Beacon metadata (IP, PID, process, username) |
+| `MODE` | Beacon mode change |
+| `OUTPUT` | Command output returned by the beacon |
+| `TASK` | Task queued by the operator |
+
+You can view raw log lines for any beacon by selecting it in the Beacons tab and expanding the log view.
+
+## MITRE ATT&CK technique mapping
+
+RedEye maps commands to MITRE ATT&CK techniques based on the command content. Techniques surface at two levels: on individual commands and aggregated on the beacon itself.
+
+The `MitreTechniques` enum contains the following values:
+
+| Technique | Description |
+|-----------|-------------|
+| `Collection` | Gathering data from the target environment |
+| `CommandAndControl` | Maintaining communication with compromised systems |
+| `CredentialAccess` | Stealing credentials |
+| `DefenseEvasion` | Avoiding detection |
+| `Discovery` | Enumerating the environment |
+| `Execution` | Running code on a system |
+| `Exfiltration` | Transferring data out of the network |
+| `GoldenTicket` | Kerberos Golden Ticket attacks (maps to T1558.001) |
+| `Impact` | Disrupting or destroying data or systems |
+| `InitialAccess` | Gaining a foothold |
+| `LateralMovement` | Moving through the network (maps to TA0008 and related techniques) |
+| `Persistence` | Maintaining access across reboots |
+| `PrivilegeEscalation` | Gaining elevated permissions (maps to TA0004 and related techniques) |
+| `Reconnaissance` | Gathering information before the attack |
+| `ResourceDevelopment` | Acquiring infrastructure or capabilities |
+
+Beacons and commands both expose a `mitreTechniques` field that returns the techniques observed. In the Beacons tab, technique icons appear next to beacons that have associated technique annotations.
+
+## Beacon color and shape
+
+You can customize how each beacon appears in the graph. This is useful for distinguishing beacon types visually or highlighting specific beacons for a presentation.
+
+**Available colors** (`NodeColors`):
+`default`, `vermilion`, `red`, `rose`, `violet`, `indigo`, `turquoise`, `green`, `forest`, `lime`, `gold`, `orange`
+
+**Available shapes** (`Shapes`):
+`circle`, `square`, `diamond`, `triangleUp`, `triangleDown`, `pentagonUp`, `pentagonDown`, `hexagonUp`, `hexagonDown`
+
+To change a beacon's color or shape:
+
+1. Select the beacon from the Beacons tab or click its node in the graph.
+2. Open the **Details** tab in the side panel.
+3. Choose a color and shape from the pickers.
+
+The same customization is available for hosts via the **Details** tab on a host node.
+
+## Hidden beacons
+
+Beacons (and hosts and servers) can be marked as hidden. Hidden entities are excluded from the graph, beacon listings, command counts, and exports by default.
+
+Hiding a beacon is useful when you want to clean up the graph for a presentation — for example, removing beacons that were short-lived, used only for connectivity, or not relevant to the findings being presented.
+
+To show or hide beacons:
+
+1. Open **Settings** from the navigation bar.
+2. Toggle **Show Hidden Beacons, Hosts, and Servers**.
+
+When hidden entities are shown, they appear in a visually distinct state so you can manage them. To hide a specific beacon, select it and use the hide control in its detail panel.
+
+<Note>
+  Some beacons cannot be hidden because removing them would break the connectivity path between other entities in the graph. RedEye prevents hiding these beacons and will indicate which ones are non-hidable via the `nonHidableEntities` query.
+</Note>
+
+## Related
+
+- [Campaigns](/concepts/campaigns) — the container that holds all beacons, hosts, and their relationships
+- [Explorer](/guide/explorer) — how to navigate beacons and hosts in the UI
+- [Graph](/guide/graph) — how the beacon and host network is visualized

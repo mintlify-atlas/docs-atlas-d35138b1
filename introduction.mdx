@@ -1,0 +1,91 @@
+---
+title: "RedEye"
+description: "A visual analytic tool for Red and Blue Team C2 operations, developed by CISA"
+---
+
+<img
+  src="https://github.com/cisagov/RedEye/blob/develop/docs/images/RedEye-Hero-Screenshot.png?raw=true"
+  alt="RedEye Screenshot"
+  style={{ borderRadius: '0.5rem' }}
+/>
+
+## What is RedEye?
+
+RedEye is an open-source analytic tool developed by [CISA](https://www.cisa.gov/) and [DOE](https://www.energy.gov/)'s [Pacific Northwest National Laboratory](https://www.pnnl.gov/) to assist Red Teams with visualizing and reporting Command & Control (C2) activities.
+
+RedEye parses logs from C2 frameworks such as Cobalt Strike, Brute Ratel, and Sliver, then presents the data in a network graph that operators can annotate, tag, and present to stakeholders.
+
+<CardGroup cols={2}>
+  <Card title="Quick Start" icon="rocket" href="/quickstart">
+    Download the binary and run your first campaign in minutes
+  </Card>
+  <Card title="Red Team Mode" icon="shield-halved" href="/concepts/red-team-mode">
+    Upload C2 logs, annotate findings, and create presentations
+  </Card>
+  <Card title="Blue Team Mode" icon="eye" href="/concepts/blue-team-mode">
+    Review exported campaigns from Red Team engagements
+  </Card>
+  <Card title="Parser Guide" icon="code" href="/parsers/overview">
+    Build custom parsers for any C2 framework
+  </Card>
+</CardGroup>
+
+## Key capabilities
+
+<CardGroup cols={2}>
+  <Card title="C2 Network Graph" icon="diagram-project">
+    Visualize the full network of beacons, hosts, and team servers in an interactive graph
+  </Card>
+  <Card title="Timeline Replay" icon="clock-rotate-left">
+    Replay attack sequences as they occurred with an interactive timeline scrubber
+  </Card>
+  <Card title="MITRE ATT&CK Mapping" icon="crosshairs">
+    Commands are tagged with MITRE ATT&CK technique identifiers for structured reporting
+  </Card>
+  <Card title="Presentation Mode" icon="presentation-screen">
+    Organize annotated findings into slide-style presentations for stakeholder briefings
+  </Card>
+  <Card title="Multi-Framework Support" icon="layer-group">
+    Built-in parsers for Cobalt Strike, Brute Ratel, and Sliver — plus a custom parser API
+  </Card>
+  <Card title="Campaign Export" icon="file-export">
+    Export campaigns as portable `.redeye` files for Blue Team handoff
+  </Card>
+</CardGroup>
+
+## Two modes, one binary
+
+RedEye ships as a single binary that operates in two distinct modes, covering the complete Red Team engagement lifecycle.
+
+| Mode | Purpose | Authentication |
+|------|---------|----------------|
+| **Red Team** | Upload logs, explore data, annotate findings, create presentations, export campaigns | Password required |
+| **Blue Team** | Read-only review of exported campaign files | No password (default mode) |
+
+## Supported C2 frameworks
+
+- **Cobalt Strike** — Log folder upload (single-server or multi-server)
+- **Brute Ratel** — Log folder upload
+- **Sliver** — Log folder upload
+- **.redeye / .sqlite** — Previously exported campaign databases
+
+<Note>
+  RedEye is currently in **maintenance mode**. CISA reviews community issues and pull requests for bug fixes, but no new features are being added.
+</Note>
+
+## Getting started
+
+<Steps>
+  <Step title="Download the binary">
+    Get the latest release for your OS from the [GitHub Releases](https://github.com/cisagov/RedEye/releases) page
+  </Step>
+  <Step title="Choose a mode">
+    Run in Red Team mode with `--redTeam --password <password>`, or double-click for Blue Team mode
+  </Step>
+  <Step title="Open the web app">
+    Navigate to `http://127.0.0.1:4000` in your browser
+  </Step>
+  <Step title="Import a campaign">
+    Upload C2 log files or try the [example datasets](/development/example-datasets)
+  </Step>
+</Steps>

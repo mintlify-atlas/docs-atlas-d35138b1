@@ -1,0 +1,152 @@
+---
+title: "Architecture"
+description: "How RedEye is structured — monorepo layout, packages, and data flow"
+---
+
+## Monorepo overview
+
+RedEye is organized as a Yarn workspaces monorepo managed by [Moon](https://moonrepo.dev/) (`@moonrepo/cli` v1.9.2). Moon handles cross-package task orchestration — builds, linting, formatting, and dev servers — through per-package `moon.yml` task files and a shared `tasks.yml` at the root `.moon/` directory.
+
+The workspace root `package.json` declares four workspace glob patterns:
+
+```
+applications/**   — runnable applications
+packages/**       — shared library packages
+parsers/**        — C2 log parser binaries
+docs/*            — documentation site
+```
+
+## Directory structure
+
+```
+RedEye/
+├── applications/
+│   ├── client/          # React frontend
+│   ├── server/          # Node.js backend + GraphQL API
+│   └── redeye-e2e/      # Cypress end-to-end tests
+├── packages/
+│   ├── graph/           # Graph visualization library
+│   ├── models/          # Shared TypeORM data models
+│   ├── migrations/      # Database migration scripts
+│   └── ui-styles/       # Shared Blueprint.js styles and components
+├── parsers/
+│   ├── cobalt-strike-parser/
+│   ├── brute-ratel-parser/
+│   ├── sliver-parser/
+│   └── parser-core/     # Shared parser utilities
+├── .moon/               # Moon build system configuration
+└── scripts/             # Release and utility scripts
+```
+
+## Applications
+
+<CardGroup cols={2}>
+  <Card title="@redeye/client" icon="browser">
+    React 18 single-page application built with Vite. Uses Blueprint.js (`@blueprintjs/core` v5) for UI components, MobX + MobX Keystone for state management, TanStack Query for server state, React Router v6 for routing, and D3 v6 for timeline rendering. Communicates with the backend exclusively through the GraphQL API using `graphql-request`.
+  </Card>
+  <Card title="@redeye/server" icon="server">
+    Node.js backend built with TypeScript. Serves the GraphQL API via Apollo Server v4 and TypeGraphQL v2, persists data in SQLite through MikroORM v5 (`@mikro-orm/better-sqlite`), and exposes a small REST API at `/api` for login, campaign upload/download, and image serving. Spawns parser child processes on demand.
+  </Card>
+  <Card title="@redeye/e2e" icon="test-tube">
+    Cypress 13 end-to-end test suite. Covers both Red Team and Blue Team modes with separate Cypress project IDs. Fixtures including example `.redeye` datasets and raw Cobalt Strike logs live in `src/fixtures/`.
+  </Card>
+</CardGroup>
+
+## Shared packages
+
+<CardGroup cols={2}>
+  <Card title="@redeye/graph" icon="chart-network">
+    Self-contained SVG graph visualization library built on D3. Implements a `GraphHandler` class with hierarchical renderers: `SuperGraphRenderer`, `GroupGraphRenderer`, `SubGraphRenderer`, and `HierarchicalGraphRenderer`. Supports zoom, drag, node selection, timeline scrubbing, and PNG export.
+  </Card>
+  <Card title="@redeye/models" icon="database">
+    Shared MikroORM entity definitions consumed by both the server and migration packages. Defines entities for `Campaign`, `Beacon`, `Host`, `Server`, `Command`, `Operator`, `Annotation`, `Tag`, `LogEntry`, and more.
+  </Card>
+  <Card title="@redeye/migrations" icon="arrows-rotate">
+    Database migration scripts that keep the SQLite schema up to date as the data model evolves. Depends on `@redeye/models`.
+  </Card>
+  <Card title="@redeye/ui-styles" icon="palette">
+    Shared CSS variables, Blueprint.js theme customizations, and utility style tokens consumed by the client.
+  </Card>
+</CardGroup>
+
+## Parsers
+
+Parsers are standalone Node.js binaries that read raw C2 log files and write structured data into the SQLite database. The server spawns them as child processes when a campaign is parsed.
+
+| Package | C2 Framework |
+|---|---|
+| `@redeye/cobalt-strike-parser` | Cobalt Strike |
+| `@redeye/brute-ratel-parser` | Brute Ratel C4 |
+| `@redeye/sliver-parser` | Sliver |
+| `@redeye/parser-core` | Shared parsing utilities |
+
+All three parser binaries are declared in the root `package.json` `bin` field and bundled alongside the server binary in release builds.
+
+## Technology stack
+
+### Frontend (`applications/client`)
+
+| Technology | Role |
+|---|---|
+| React 18 | UI framework |
+| TypeScript 5 | Language |
+| Vite 4 | Build tool and dev server |
+| Blueprint.js v5 | UI component library |
+| MobX 6 + MobX Keystone | State management |
+| TanStack Query v4 | Server state / caching |
+| React Router v6 | Client-side routing |
+| `graphql-request` | GraphQL client |
+| D3 v6 | Timeline and data visualization |
+| Emotion | CSS-in-JS |
+
+### Backend (`applications/server`)
+
+| Technology | Role |
+|---|---|
+| Node.js 18 | Runtime |
+| TypeScript 5 | Language |
+| Apollo Server v4 | GraphQL server |
+| TypeGraphQL v2 | Code-first GraphQL schema |
+| MikroORM v5 (better-sqlite) | ORM and SQLite adapter |
+| Express v4 | HTTP server and REST routes |
+| Commander v8 | CLI argument parsing |
+| Winston v3 | Logging |
+| `pkg` | Binary bundler |
+
+### Build and tooling
+
+| Technology | Role |
+|---|---|
+| Yarn 3 (Berry) | Package manager, workspaces |
+| Moon 1.9.2 | Monorepo task runner |
+| Husky + lint-staged | Pre-commit hooks |
+| ESLint 8 + Prettier 2 | Linting and formatting |
+| Cypress 13 | End-to-end testing |
+| Changesets | Versioning and changelog |
+
+## Data flow
+
+```
+C2 Log Files
+    │
+    ▼
+Parser binary (child process)
+    │  writes entities
+    ▼
+SQLite database (MikroORM)
+    │
+    ▼
+Apollo Server / TypeGraphQL
+    │  /graphql endpoint
+    ▼
+React client (graphql-request)
+    │
+    ▼
+@redeye/graph  ──▶  SVG canvas in browser
+```
+
+1. The user uploads a campaign (raw C2 logs or a `.redeye` file) through the client.
+2. The server saves uploaded files to disk and spawns the appropriate parser binary.
+3. The parser reads the log files and persists structured entities into SQLite via MikroORM.
+4. Once parsing is complete, the client queries data through the GraphQL API.
+5. The `@redeye/graph` package renders the beacon-host-server graph in an SVG canvas and responds to timeline scrubbing events.

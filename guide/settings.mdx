@@ -1,0 +1,64 @@
+---
+title: "Settings"
+description: "Configure display preferences including timezone, theme, beacon visibility, and graph options"
+---
+
+The **Settings** modal lets you control how RedEye displays campaign data. Access it from the settings icon in the navigation bar.
+
+## Timezone
+
+All timestamps in RedEye — commands, comments, the timeline — display in a configurable timezone.
+
+By default, RedEye automatically detects and uses your current local timezone. To change it:
+
+<Steps>
+  <Step title="Open Settings">
+    Click the settings icon in the navigation bar to open the Settings modal.
+  </Step>
+  <Step title="Disable AutoSelect">
+    Uncheck the **AutoSelect** toggle in the Timezone section.
+  </Step>
+  <Step title="Choose a timezone">
+    Use the dropdown to select the timezone you want to use for viewing the campaign. This is useful when analyzing a campaign that occurred in a different timezone than your own.
+  </Step>
+</Steps>
+
+<Note>
+  Changing the timezone affects only how timestamps are displayed. The underlying data is always stored in UTC.
+</Note>
+
+## Show/hide beacons
+
+Beacons, hosts, and servers can be individually hidden from the graph and Explorer to reduce clutter during analysis. The **Show Hidden Beacons, Hosts, and Servers** toggle controls whether hidden items are visible.
+
+- **Checked** — hidden beacons, hosts, and servers appear in the graph and Explorer (typically shown with a visual indicator that they are hidden)
+- **Unchecked** — hidden items are not shown anywhere in the interface
+
+<Tip>
+  Use this setting when sharing your screen. Hide irrelevant or sensitive beacons before a briefing, then use the toggle to show them again when the presentation is over.
+</Tip>
+
+## Light theme
+
+RedEye defaults to a dark theme. Toggle **Light Theme** to switch to a light color scheme.
+
+The theme change applies immediately across the entire interface.
+
+## Redacted screenshot mode
+
+When **Redacted Screenshot Mode** is enabled, RedEye renders all text as unreadable (obfuscated characters). This lets you take screenshots of the campaign structure — graphs, timelines, node layouts — without exposing sensitive hostnames, IP addresses, operator names, or command content.
+
+Use this mode when:
+- Sharing screenshots in a report where client data must be protected
+- Demonstrating RedEye's features without revealing engagement details
+- Capturing the graph structure for documentation purposes
+
+<Warning>
+  Redacted Screenshot Mode obfuscates text in the UI but does not alter any underlying data. Disable it before resuming normal analysis work.
+</Warning>
+
+## Graph settings
+
+The Settings modal also includes controls for the graph display. These settings adjust how nodes and edges are rendered in the network graph.
+
+For interactive graph controls during analysis — including zoom, legend, and export — use the graph controls panel located on the right side of the graph view. See the [Graph](/guide/graph) page for details.

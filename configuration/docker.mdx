@@ -1,0 +1,108 @@
+---
+title: "Docker"
+description: "Run RedEye using Docker Compose for containerized deployments"
+---
+
+RedEye ships with a `Dockerfile` and `docker-compose.yml` for containerized deployments. The Docker setup builds the RedEye binary inside a Linux container and runs it without requiring Node.js on the host machine.
+
+## Prerequisites
+
+- [Docker](https://docs.docker.com/get-docker/) installed and running
+- [Docker Compose](https://docs.docker.com/compose/install/) v1.28 or later
+- The RedEye repository cloned locally
+
+## Running with Docker Compose
+
+<Steps>
+  <Step title="Clone the repository">
+    ```bash
+    git clone https://github.com/cisagov/RedEye.git
+    cd RedEye
+    ```
+  </Step>
+
+  <Step title="Update environment variables">
+    Open `docker-compose.yml` and set your desired values for the environment variables under the `redeye-core` service. At minimum, set a strong `AUTHENTICATION_PASSWORD`.
+
+    ```yaml
+    services:
+      redeye-core:
+        environment:
+          - NODE_ENV=production
+          - SERVER_BLUE_TEAM=false
+          - AUTHENTICATION_PASSWORD=your_password_here
+    ```
+  </Step>
+
+  <Step title="Start the container">
+    ```bash
+    docker-compose -f docker-compose.yml up -d redeye-core
+    ```
+
+    The `-d` flag runs the container in detached mode. The first run will build the image, which may take several minutes.
+  </Step>
+
+  <Step title="Open the web app">
+    Navigate to [http://127.0.0.1:4000](http://127.0.0.1:4000) in your browser.
+  </Step>
+</Steps>
+
+## Environment variables
+
+These environment variables are read by the `redeye-core` service at runtime:
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `NODE_ENV` | `production` | Node.js environment. Set to `production` for normal use. |
+| `SERVER_BLUE_TEAM` | `false` | When set to any truthy value, forces the server into Blue Team (read-only) mode regardless of other settings. |
+| `AUTHENTICATION_PASSWORD` | `8888` | Password required to log in to the Red Team interface. Change this before deploying. |
+
+<Warning>
+  The default password in `docker-compose.yml` is `8888`. Always change `AUTHENTICATION_PASSWORD` to a strong, unique value before running in any environment where the server is accessible to others.
+</Warning>
+
+## Ports
+
+The `docker-compose.yml` maps the following port:
+
+| Host port | Container port | Description |
+|-----------|---------------|-------------|
+| `4000` | `4000` | RedEye web interface and API |
+
+To serve RedEye on a different host port, update the `ports` mapping in `docker-compose.yml`:
+
+```yaml
+ports:
+  - 8080:4000  # Serve on host port 8080
+```
+
+## Build targets
+
+The `Dockerfile` defines two build targets:
+
+| Target | Description |
+|--------|-------------|
+| `redeye-builder` | Builds all RedEye artifacts and packages them as `release.tar.gz`. Used to produce distributable binaries. |
+| `redeye-core` | Minimal Debian image that runs the compiled Linux binary. Used for deployments. |
+
+The `docker-compose.yml` also defines a `redeye-artifacts` service using the `redeye-builder` target, which you can use to extract build outputs:
+
+```bash
+docker-compose -f docker-compose.yml up redeye-artifacts
+```
+
+## Stopping the container
+
+```bash
+docker-compose -f docker-compose.yml down
+```
+
+To stop the container and remove its volumes:
+
+```bash
+docker-compose -f docker-compose.yml down -v
+```
+
+<Note>
+  The `redeye-core` container does not define named volumes in `docker-compose.yml`. Campaign data is stored inside the container's filesystem. If you need to persist campaign data across container restarts, add a volume mount to the `redeye-core` service pointing to the `/app` working directory.
+</Note>

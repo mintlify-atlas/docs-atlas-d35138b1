@@ -1,0 +1,73 @@
+---
+title: "Presentations"
+description: "Create and present findings as structured slide decks grouped by tag"
+---
+
+Presentations turn your annotated campaign findings into structured, navigable slide decks. Each slide corresponds to a comment, ordered by the time of the associated command. Presentations are ideal for briefing stakeholders on how an attack unfolded.
+
+## Accessing presentation mode
+
+Click the **presentation** icon in the navigation bar to open presentation mode. You can also switch into presentations from the main campaign view.
+
+## The presentations list
+
+When you first open presentation mode, you see the presentations list. RedEye generates presentations automatically based on your comments and tags:
+
+| Presentation | Contents |
+|-------------|----------|
+| **All** | Every comment in the campaign, ordered chronologically by command time |
+| **Favorite** | Only comments you have marked as favorites |
+| **[Tag name]** | All comments with a specific tag, one presentation per unique tag |
+
+The **All** and **Favorite** presentations are always present. Tag-based presentations appear automatically as you add tags to comments — no manual setup required.
+
+<Note>
+  Presentations are generated from your [comments and tags](/guide/comments-and-tags). The more thoroughly you annotate the campaign, the more structured and useful your presentations will be.
+</Note>
+
+## Opening a presentation
+
+Click any item in the presentations list to open it. Each presentation opens in a slide view where you can navigate through the findings.
+
+## Navigating slides
+
+Each slide in a presentation corresponds to one comment. Slides are ordered by the timestamp of the command the comment is attached to, so the presentation follows the chronological sequence of the attack.
+
+<Steps>
+  <Step title="Move forward">
+    Click **Next** to advance to the next slide.
+  </Step>
+  <Step title="Move backward">
+    Click the **previous arrow** to the left of **Next** to go back to the previous slide.
+  </Step>
+  <Step title="Jump to a specific slide">
+    Use the **slide indicator** below the navigation controls. It shows your current position (for example, "3 / 12") and you can click it to jump to a specific slide number.
+  </Step>
+</Steps>
+
+As you navigate, the graph and timeline update to reflect the context of the current slide's command.
+
+## Returning to the presentations list
+
+Click the **left arrow** button at the far left of the presentation panel to return to the presentations list.
+
+## Building effective presentations
+
+<CardGroup cols={2}>
+  <Card title="Use consistent tags" icon="tag">
+    Tag comments with the same names across the campaign to keep presentations focused. Each unique tag becomes its own presentation.
+  </Card>
+  <Card title="Favorite key findings" icon="star">
+    Mark your most impactful comments as favorites. The **Favorite** presentation gives you a concise highlight reel without needing to scroll through everything.
+  </Card>
+  <Card title="Annotate in sequence" icon="list-ol">
+    Comments are ordered by command time, not creation time. Adding comments as you analyze means the slide order naturally follows the attack narrative.
+  </Card>
+  <Card title="Use multi-command comments" icon="layer-group">
+    For complex techniques that span several commands, use [multi-command comments](/guide/comments-and-tags#multi-command-comments) so the full context appears in a single slide.
+  </Card>
+</CardGroup>
+
+<Tip>
+  Before a briefing, run through the presentation once using the timeline playback in each slide to verify the graph context is clear for your audience.
+</Tip>

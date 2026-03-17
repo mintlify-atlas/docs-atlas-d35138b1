@@ -1,0 +1,153 @@
+---
+title: "Contributing"
+description: "How to contribute bug fixes and improvements to RedEye"
+---
+
+<Warning>
+  RedEye is currently in **maintenance mode**. The maintainers review community issues and pull requests for bug fixes, but will not consider new feature additions.
+</Warning>
+
+## Getting started
+
+<Steps>
+  <Step title="Fork and clone the repository">
+    [Fork](https://docs.github.com/en/github/getting-started-with-github/fork-a-repo) the [cisagov/RedEye](https://github.com/cisagov/RedEye) repository on GitHub, then clone your fork locally:
+
+    ```bash
+    git clone https://github.com/<your-username>/RedEye.git
+    cd RedEye
+    ```
+  </Step>
+
+  <Step title="Create a branch">
+    [Create a separate branch](https://docs.github.com/en/desktop/contributing-and-collaborating-using-github-desktop/managing-branches) for your changes:
+
+    ```bash
+    git checkout -b fix/your-bug-description
+    ```
+  </Step>
+
+  <Step title="Install dependencies">
+    ```bash
+    yarn install
+    ```
+  </Step>
+
+  <Step title="Make your changes">
+    Implement your fix. Ensure the code passes linting and is formatted by Prettier before committing (see [Code style](#code-style) below).
+  </Step>
+
+  <Step title="Create a changeset">
+    RedEye uses [Changesets](https://github.com/atlassian/changesets) for versioning. Run the following and follow the prompts to describe your change:
+
+    ```bash
+    yarn add-changeset
+    ```
+  </Step>
+
+  <Step title="Run the tests">
+    Validate your changes locally with the Cypress test suite:
+
+    ```bash
+    yarn test
+    ```
+
+    See [Running tests](#running-tests) below for more detail.
+  </Step>
+
+  <Step title="Push and open a pull request">
+    Push your branch to your fork and open a pull request against the `develop` branch of the upstream repository.
+  </Step>
+</Steps>
+
+## Submitting issues
+
+Before opening a new issue, search the [existing issues](https://github.com/cisagov/RedEye/issues) to avoid duplicates. When filing a bug report, include:
+
+- RedEye version (from `package.json` or the release binary)
+- Operating system and version
+- Steps to reproduce the problem
+- Expected vs. actual behavior
+- Any relevant log output
+
+## Submitting pull requests
+
+- Keep pull requests focused on a single bug fix.
+- Provide a clear description of what the change fixes and why.
+- Reference any related issues with `Closes #<issue>` in the PR description.
+- Make sure CI passes before requesting a review.
+- New feature PRs will not be merged — open an issue for discussion first if you are unsure.
+
+## Code style
+
+RedEye enforces code style automatically using ESLint and Prettier.
+
+### Prettier
+
+Prettier runs on staged files automatically via a Husky pre-commit hook (configured in `lint-staged`):
+
+```json
+"lint-staged": {
+  "**/*.{json,yml,yaml,js,jsx,ts,tsx}": [
+    "yarn prettier --ignore-path .gitignore --write"
+  ]
+}
+```
+
+You can format all files manually at any time:
+
+```bash
+yarn format
+```
+
+### ESLint
+
+The project uses `eslint-config-airbnb-typescript` as its base, extended with plugins for React, React Hooks, import ordering, accessibility (`jsx-a11y`), and several others. Run the linter:
+
+```bash
+yarn lint
+```
+
+The client package has its own `.eslintrc.yaml`. ESLint is configured to only emit warnings (via `eslint-plugin-only-warn`) so the build does not fail on lint issues, but all warnings should be resolved before submitting a PR.
+
+### TypeScript
+
+All application and package code is TypeScript 5. Strict mode is not universally enabled, but avoid introducing `any` types where possible.
+
+## Running tests
+
+RedEye uses [Cypress](https://www.cypress.io/) for end-to-end tests.
+
+```bash
+# Open the interactive Cypress Test Runner (Red Team mode)
+yarn test
+
+# Open Cypress for Blue Team mode
+yarn cy:open-blue
+
+# Run the app in test mode (built client + live backend)
+yarn start:test-app
+```
+
+Test results can be combined into a JUnit XML report:
+
+```bash
+yarn combine:reports
+```
+
+<Tip>
+  Load one of the [example datasets](/development/example-datasets) before running Cypress so the tests have campaign data to work with.
+</Tip>
+
+## Code of conduct
+
+This project follows the [Contributor Covenant Code of Conduct](https://github.com/cisagov/RedEye/blob/develop/CODE_OF_CONDUCT.md). By participating you agree to uphold it.
+
+Key points:
+
+- Use welcoming and inclusive language.
+- Be respectful of differing viewpoints and experiences.
+- Gracefully accept constructive criticism.
+- Focus on what is best for the community.
+
+Unacceptable behavior includes harassment, trolling, publishing others' private information without consent, and other conduct that would be inappropriate in a professional setting. Report violations to the project maintainers.

@@ -1,0 +1,147 @@
+---
+title: "Red Team mode"
+description: "Full-featured mode for uploading, annotating, and exporting C2 campaign data"
+---
+
+Red Team mode is the full-featured operating mode of RedEye. Use it during and after an engagement to ingest C2 logs, explore the resulting network graph, annotate findings with comments and tags, build presentations for stakeholders, and export campaigns for Blue Team handoff.
+
+<Note>
+  Red Team mode requires a password at startup. This password is used to authenticate every user session. You choose the password yourself when launching the server.
+</Note>
+
+## Starting in Red Team mode
+
+Open a terminal in the directory containing the `RedEye` binary and run:
+
+```bash
+./RedEye --redTeam --password <your_password>
+```
+
+Replace `<your_password>` with a password of your choice. The server starts on port `4000` by default and opens the web app in your browser automatically. Navigate to [http://127.0.0.1:4000](http://127.0.0.1:4000) if the browser does not open.
+
+To stop the server, close the terminal window.
+
+### Startup options
+
+You can pass additional flags to customize how the server runs:
+
+```bash
+./RedEye --redTeam --password <your_password> --port 8080
+```
+
+All available flags:
+
+| Flag | Type | Description |
+|------|------|-------------|
+| `--redTeam` | boolean | Enable Red Team mode |
+| `--password` | string | Authentication password (required) |
+| `--port` | number | Port to serve the UI on (default: `4000`) |
+| `--parsers` | string... | Parser binaries to load (default: all in `parsers/`) |
+| `--childProcesses` | number | Max parser subprocesses (default: `8`) |
+
+### Using a config file
+
+Instead of passing flags every time, place a `config.json` file next to the `RedEye` binary:
+
+```json
+{
+  "password": "your_password",
+  "redTeam": true,
+  "parsers": ["cobalt-strike-parser", "brute-ratel-parser"]
+}
+```
+
+The server reads this file at startup. CLI flags override config file values.
+
+### Docker
+
+You can also run RedEye in Red Team mode using Docker Compose:
+
+```bash
+# Clone the repo and update environment variables in docker-compose.yml, then:
+docker-compose -f docker-compose.yml up -d redeye-core
+```
+
+## Authentication
+
+When you open the web app in Red Team mode, you are prompted to create a user account. Enter a username and click **+ New User**. You will then be asked for the server password you set at startup.
+
+Multiple users can have accounts on the same RedEye server. All users share access to the same campaigns.
+
+## Features available in Red Team mode
+
+<CardGroup cols={2}>
+  <Card title="Upload campaigns" icon="upload">
+    Import log folders from Cobalt Strike, Brute Ratel, and Sliver, or upload previously exported `.redeye` files
+  </Card>
+  <Card title="Explore the graph" icon="diagram-project">
+    Visualize beacons, hosts, and team servers in an interactive network graph with timeline replay
+  </Card>
+  <Card title="Annotate with comments and tags" icon="tag">
+    Add comments and tags to individual commands or groups of commands to document findings
+  </Card>
+  <Card title="Create presentations" icon="presentation-screen">
+    Organize tagged findings into slide-style presentations grouped by tag and ordered by time
+  </Card>
+  <Card title="Search" icon="magnifying-glass">
+    Full-text search across beacons, hosts, operators, comments, commands, and tags
+  </Card>
+  <Card title="Export campaigns" icon="file-export">
+    Export a campaign as a portable `.redeye` file with optional anonymization for Blue Team handoff
+  </Card>
+</CardGroup>
+
+Blue Team mode provides only read-only exploration. Red Team mode is the only mode where you can ingest new data, annotate findings, or export campaigns.
+
+## Red Team workflow
+
+<Steps>
+  <Step title="Upload C2 logs">
+    From the campaign cards screen, click **+ Add Campaign**. Select the log source (Cobalt Strike, Brute Ratel, Sliver, or a `.redeye` file) and upload the log folder or file. RedEye parses the logs and builds the campaign database.
+  </Step>
+
+  <Step title="Explore the campaign">
+    Select the campaign to open the Explorer. Review the network graph, browse beacons and hosts in the sidebar tabs, and use the timeline to replay activity chronologically. Select a beacon or host node to see commands, operators, and metadata.
+  </Step>
+
+  <Step title="Annotate findings">
+    Hover over a command and click **Add Comment** to attach an analyst note. Use the tag field to apply a MITRE tactic label or a custom tag. Use the multi-command comment function to group related commands under a single annotation.
+  </Step>
+
+  <Step title="Build a presentation">
+    Open presentation mode from the navigation bar. Presentations are automatically organized by tag — each tag becomes a category, and the slides are ordered by command time. Walk through the **All** or **Favorite** presentations to review every annotation, or open a specific tag category to focus on one area.
+  </Step>
+
+  <Step title="Export for Blue Team handoff">
+    Open the campaign's **More** menu from the campaign cards screen and select **Export**. RedEye exports the campaign as a `.redeye` file (a SQLite database). Apply anonymization options before exporting if needed, then hand the file to the Blue Team.
+  </Step>
+</Steps>
+
+## Exporting a campaign
+
+Exporting a campaign produces a `.redeye` file that encapsulates the complete campaign — beacons, hosts, commands, annotations, and tags — in a single portable SQLite database.
+
+Before exporting, you can apply anonymization options to scrub sensitive data:
+
+| Option | What it removes or replaces |
+|--------|-----------------------------|
+| `replaceHostnames` | Replaces hostnames with generic identifiers |
+| `replaceDomainsAndIps` | Replaces IP addresses and domain names |
+| `replaceUsernames` | Replaces usernames |
+| `removeKeystrokes` | Removes keystroke log content |
+| `removePasswordsHashes` | Removes passwords and hashes from output |
+| `removeScreenshots` | Removes captured screenshots |
+| `removeHidden` | Excludes hidden beacons, hosts, and servers |
+| `findReplace` | Substitutes arbitrary strings with custom replacements |
+
+<Tip>
+  Use `replaceHostnames`, `replaceDomainsAndIps`, and `replaceUsernames` together when sharing a campaign outside your organization. This protects client environment details while preserving the tactical narrative.
+</Tip>
+
+The exported `.redeye` file can be opened directly in Blue Team mode via the **+ Add Campaign** dialog, or pre-loaded into a handoff package by placing it in a `campaigns/` folder next to the RedEye binary.
+
+## Related
+
+- [Blue Team mode](/concepts/blue-team-mode) — how the Blue Team receives and reviews exported campaigns
+- [Campaigns](/concepts/campaigns) — the `.redeye` file format and campaign lifecycle
+- [Uploading campaigns](/guide/uploading-campaigns) — step-by-step upload instructions for each supported log source

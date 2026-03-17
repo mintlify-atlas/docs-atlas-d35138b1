@@ -1,0 +1,129 @@
+---
+title: 'Create a custom parser'
+description: 'Build a custom RedEye parser for any C2 framework using the parser API'
+---
+
+A custom parser lets you import data from any C2 framework into RedEye. Parsers are standalone command-line programs — you can write one in any language that can read command-line arguments and write to stdout.
+
+## Language support
+
+RedEye parsers have no language requirement. You can write a parser in:
+
+- Node.js / TypeScript
+- Python
+- Go
+- Rust
+- Any language that compiles to a binary or can be invoked via a shebang script
+
+The only requirement is that your program can be invoked from the command line and writes messages to stdout in the correct format.
+
+## Requirements
+
+Every parser must:
+
+1. Be a single executable file (or script with a shebang line)
+2. Be placed in the `parsers/` folder next to the RedEye binary
+3. Implement the `info` command
+4. Implement the `parse-campaign` command
+5. Write all output to stdout in the `[<TYPE>] <JSON>\n` format
+
+## Communication format
+
+RedEye sends commands to your parser as CLI arguments. Your parser replies by writing messages to stdout. Every message must follow this format:
+
+```
+[<TYPE>] <JSON>\n
+```
+
+For example, a data response looks like this:
+
+```
+[DATA] {"servers":{...},"beacons":{...}}\n
+```
+
+The available message types are `[DATA]`, `[PROGRESS]`, `[LOG]`, and `[ERROR]`. See [Message types](/parsers/message-types) for details.
+
+## Commands to implement
+
+| Command | Invocation | Purpose |
+|---|---|---|
+| `info` | `<parser> info` | Registers the parser and configures the upload UI |
+| `parse-campaign` | `<parser> parse-campaign --folder <path>` | Processes C2 log files and returns structured data |
+
+## Minimal working skeleton
+
+Here is a minimal working parser written in Node.js. It implements both required commands:
+
+```typescript custom-redeye-parser
+#!/usr/bin/env node
+import fileSystem from 'fs';
+
+function info() {
+	const message =
+		'[DATA] ' +
+		JSON.stringify({
+			version: 1,
+			id: 'custom-redeye-parser',
+			name: 'Custom RedEye Parser',
+			uploadForm: {
+				serverDelineation: 'Database',
+				enabledInBlueTeam: false,
+				tabTitle: 'C2 Framework',
+				fileUpload: {
+					type: 'Directory',
+					validate: 'None',
+					description: 'Upload a directory of C2 log files',
+				},
+				fileDisplay: {
+					editable: true,
+				},
+			},
+		}) +
+		'\n';
+	process.stdout.write(message);
+}
+
+function parseCampaign() {
+	const folderPath = process.argv[4].replaceAll('"', '');
+	const output = {
+		servers: {},
+		hosts: {},
+		beacons: {},
+		operators: {},
+		commands: {},
+		links: {},
+	};
+
+	// Read and parse your C2 log files from folderPath here
+
+	process.stdout.write('[DATA] ' + JSON.stringify(output) + '\n');
+}
+
+if (process.argv[2] === 'info') {
+	info();
+} else if (process.argv[2] === 'parse-campaign') {
+	parseCampaign();
+}
+```
+
+## Making the parser executable
+
+After writing your parser, make the file executable and place it in the `parsers/` folder:
+
+```bash
+chmod +x ./custom-redeye-parser
+mv ./custom-redeye-parser /path/to/redeye/parsers/
+```
+
+With `parsers` set to `true` in `config.json`, RedEye automatically detects and loads any executable in the `parsers/` folder.
+
+## Next steps
+
+<Columns cols={2}>
+  <Card title="The info command" href="/parsers/info-command" icon="circle-info">
+    Learn all the properties you can configure to customize the upload form in RedEye's UI.
+  </Card>
+  <Card title="The parse-campaign command" href="/parsers/parse-campaign-command" icon="code">
+    Learn how to read uploaded files and return structured data back to RedEye.
+  </Card>
+</Columns>
